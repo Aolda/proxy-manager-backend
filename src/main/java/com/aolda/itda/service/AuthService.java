@@ -65,11 +65,9 @@ public class AuthService {
                 "            ],\n" +
                 "            \"password\": {\n" +
                 "                \"user\": {\n" +
-                "                    \"name\": \""+ id + "\",\n" +
                 "                    \"domain\": {\n" +
                 "                        \"name\": \"Default\"\n" +
                 "                    },\n" +
-                "                    \"password\": \"" + password + "\"\n" +
                 "                }\n" +
                 "            }\n" +
                 "        }\n" +
