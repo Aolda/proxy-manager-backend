@@ -2,7 +2,6 @@ package com.aolda.itda.service;
 
 import com.aolda.itda.dto.auth.LoginRequestDTO;
 import com.aolda.itda.dto.auth.LoginResponseDTO;
-import com.aolda.itda.dto.auth.ProjectIdAndNameDTO;
 import com.aolda.itda.dto.auth.ProjectRoleDTO;
 import com.aolda.itda.exception.CustomException;
 import com.aolda.itda.exception.ErrorCode;
@@ -45,8 +44,7 @@ public class AuthService {
 
         response.addHeader("X-Subject-Token", token);
         return LoginResponseDTO.builder()
-                .isAdmin(false)
-                .lists(getProjectsWithUser(user))
+                .lists(getRolesWithProjects(user))
                 .build();
     }
 
@@ -65,9 +63,11 @@ public class AuthService {
                 "            ],\n" +
                 "            \"password\": {\n" +
                 "                \"user\": {\n" +
+                "                    \"name\": \""+ id + "\",\n" +
                 "                    \"domain\": {\n" +
                 "                        \"name\": \"Default\"\n" +
                 "                    },\n" +
+                "                    \"password\": \"" + password + "\"\n" +
                 "                }\n" +
                 "            }\n" +
                 "        }\n" +
@@ -125,33 +125,5 @@ public class AuthService {
     public String getAdminToken() {
         Map<String, String> user = getToken(adminId, adminPassword);
         return user.get("token");
-    }
-
-    private List<ProjectIdAndNameDTO> getProjectsWithUser(Map<String, String> user) throws JsonProcessingException {
-        String userId = user.get("id");
-        String token = user.get("token");
-        if (userId == null || token == null) {
-            throw new CustomException(ErrorCode.INVALID_USER_INFO);
-        }
-
-        String url = keystone + "/users/" + userId + "/projects";
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("X-Auth-Token", getAdminToken());
-
-        HttpEntity<String> requestEntity = new HttpEntity<>(headers);
-        ResponseEntity<String> res = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
-
-        JsonNode node = objectMapper.readTree(res.getBody());
-        ArrayNode arrayNode = (ArrayNode) node.get("projects");
-
-        List<ProjectIdAndNameDTO> lists = new ArrayList<>();
-
-        for (JsonNode assignment : arrayNode) {
-            String projectId = assignment.path("id").asText();
-            String projectName = assignment.path("name").asText();
-            lists.add(new ProjectIdAndNameDTO(projectId, projectName));
-        }
-        return lists;
     }
 }
