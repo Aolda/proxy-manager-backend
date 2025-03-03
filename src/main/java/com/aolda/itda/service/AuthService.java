@@ -3,7 +3,6 @@ package com.aolda.itda.service;
 import com.aolda.itda.dto.auth.LoginRequestDTO;
 import com.aolda.itda.dto.auth.LoginResponseDTO;
 import com.aolda.itda.dto.auth.ProjectIdAndNameDTO;
-import com.aolda.itda.dto.auth.ProjectRoleDTO;
 import com.aolda.itda.exception.CustomException;
 import com.aolda.itda.exception.ErrorCode;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -16,8 +15,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpStatusCodeException;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
