@@ -15,6 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
@@ -88,8 +91,15 @@ public class AuthService {
                     "token", token);
     }
 
-    // 특정 사용자의 프로젝트별 Role 반환
-    private List<ProjectRoleDTO> getRolesWithProjects(Map<String, String> user) throws JsonProcessingException {
+    // 특정 사용자의 특정 프로젝트 내 최고 권한 반환
+    public Map<String, String> getBestRoleWithinProject(String token, String projectId) throws JsonProcessingException {
+        return getBestRoleWithinProject(Map.of(
+                "id", validateTokenAndGetUserId(token),
+                "token", token),
+                projectId);
+    }
+
+    private Map<String, String> getBestRoleWithinProject(Map<String, String> user, String projectId) throws JsonProcessingException {
         String userId = user.get("id");
         String token = user.get("token");
 
@@ -97,7 +107,7 @@ public class AuthService {
             throw new CustomException(ErrorCode.INVALID_USER_INFO);
         }
 
-        String url = keystone + "/role_assignments?user.id=" + userId + "&effective&include_names=true";
+        String url = keystone + "/role_assignments?user.id=" + userId + "&effective&include_names=true&scope.project.id=" + projectId;
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("X-Auth-Token", getAdminToken());
@@ -108,19 +118,23 @@ public class AuthService {
         JsonNode node = objectMapper.readTree(res.getBody());
         ArrayNode arrayNode = (ArrayNode) node.get("role_assignments");
 
-        List<ProjectRoleDTO> lists = new ArrayList<>();
+        String bestRole = "reader";
 
         for (JsonNode assignment : arrayNode) {
 
-            String projectName = assignment.path("scope").path("project").path("name").asText();
             String roleName = assignment.path("role").path("name").asText();
 
-            ProjectRoleDTO projectRoleDTO = new ProjectRoleDTO(projectName, roleName);
-            lists.add(projectRoleDTO);
+            if (roleName.equals("admin")) { // admin인 경우
+                bestRole = roleName;
+            } else if (roleName.equals("manager") && !bestRole.equals("admin")) { // 최고 권한이 admin이 아닌 경우
+                bestRole = roleName;
+            } else if (roleName.equals("member") && bestRole.equals("reader")) { // 최고 권한이 reader인 경우
+                bestRole = roleName;
+            }
 
         }
 
-        return lists;
+        return Map.of("role", bestRole);
     }
 
     // 관리자용 토큰 발행
@@ -129,6 +143,7 @@ public class AuthService {
         return user.get("token");
     }
 
+    // 특정 사용자의 참여 프로젝트 반환
     private List<ProjectIdAndNameDTO> getProjectsWithUser(Map<String, String> user) throws JsonProcessingException {
         String userId = user.get("id");
         String token = user.get("token");
@@ -155,5 +170,21 @@ public class AuthService {
             lists.add(new ProjectIdAndNameDTO(projectId, projectName));
         }
         return lists;
+    }
+
+    private String validateTokenAndGetUserId(String token) throws JsonProcessingException {
+        String url = keystone + "/auth/tokens";
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Auth-Token", getAdminToken());
+        headers.set("X-Subject-Token", token);
+        HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+        ResponseEntity<String> res;
+        try {
+            res = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+        return objectMapper.readTree(res.getBody()).path("token").path("user").path("id").asText();
+
     }
 }
