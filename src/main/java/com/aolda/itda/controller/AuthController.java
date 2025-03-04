@@ -6,10 +6,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -23,5 +20,12 @@ public class AuthController {
                                         @RequestBody LoginRequestDTO loginRequestDTO) throws JsonProcessingException {
 
         return ResponseEntity.ok(authService.userLogin(response, loginRequestDTO));
+    }
+
+    @GetMapping("/role")
+    public ResponseEntity<Object> roleWithinProject(@RequestHeader("X-Subject-Token") String token,
+                                                    @RequestParam String projectId) throws JsonProcessingException {
+
+        return ResponseEntity.ok(authService.getBestRoleWithinProject(token, projectId));
     }
 }
