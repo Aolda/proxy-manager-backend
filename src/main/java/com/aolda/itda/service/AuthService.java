@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
@@ -133,11 +134,59 @@ public class AuthService {
         return token;
     }
 
+    private String getProjectToken(String unscopedToken, String projectId) {
+
+        String url = keystone + "/auth/tokens";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+
+        String requestBody = "{\n" +
+                "    \"auth\": {\n" +
+                "        \"identity\": {\n" +
+                "            \"methods\": [\n" +
+                "                \"token\"\n" +
+                "            ],\n" +
+                "            \"token\": {\n" +
+                "                \"id\": \"" + unscopedToken +"\"\n" +
+                "            }\n" +
+                "        },\n" +
+                "        \"scope\": {\n" +
+                "            \"project\": {\n" +
+                "                \"id\": \""+ projectId +"\"\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }\n" +
+                "}";
+
+        HttpEntity<String> requestEntity;
+        ResponseEntity<Map> res;
+        try {
+            requestEntity = new HttpEntity<>(requestBody, headers);
+            res = restTemplate.postForEntity(url, requestEntity, Map.class);
+        } catch (HttpClientErrorException.Forbidden e) {
+            return unscopedToken;
+        }
+        catch (RuntimeException e) {
+            e.printStackTrace();
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+
+        Map<String, Object> resToken = (Map<String, Object>) res.getBody().get("token");
+        Map<String, Object> resUser = (Map<String, Object>) resToken.get("user");
+        String userId = (String) resUser.get("id");
+        String token = res.getHeaders().getFirst("X-Subject-Token");
+
+        return token;
+    }
+
+
     // 특정 사용자의 특정 프로젝트 내 최고 권한 반환
     public Map<String, String> getBestRoleWithinProject(String token, String projectId) throws JsonProcessingException {
+
         return getBestRoleWithinProject(Map.of(
                 "id", validateTokenAndGetUserId(token),
-                "token", token),
+                "token", getProjectToken(token, projectId)),
                 projectId);
     }
 
@@ -224,6 +273,7 @@ public class AuthService {
         try {
             res = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
         } catch (HttpClientErrorException.NotFound e) {
+            System.out.println("validate");
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
         return objectMapper.readTree(res.getBody()).path("token").path("user").path("id").asText();
