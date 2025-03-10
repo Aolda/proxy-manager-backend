@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
@@ -38,15 +39,16 @@ public class AuthService {
 
         String userId = user.get("id");
         String token = user.get("token");
+        String systemToken = getSystemToken(userId, loginRequestDTO.getPassword());
 
         if (userId == null || token == null) {
             throw new CustomException(ErrorCode.INVALID_USER_INFO);
         }
 
-        response.addHeader("X-Subject-Token", token);
+        response.addHeader("X-Subject-Token", systemToken != null ? systemToken : token);
         return LoginResponseDTO.builder()
-                .isAdmin(false)
-                .lists(getProjectsWithUser(user))
+                .isAdmin(systemToken != null)
+                .projects(getProjectsWithUser(user))
                 .build();
     }
 
@@ -88,11 +90,103 @@ public class AuthService {
                     "token", token);
     }
 
+    private String getSystemToken(String id, String password) {
+
+        String url = keystone + "/auth/tokens";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        String requestBody = "{\n" +
+                "    \"auth\": {\n" +
+                "        \"identity\": {\n" +
+                "            \"methods\": [\n" +
+                "                \"password\"\n" +
+                "            ],\n" +
+                "            \"password\": {\n" +
+                "                \"user\": {\n" +
+                "                    \"id\": \"" + id + "\",\n" +
+                "                    \"password\": \"" + password + "\"\n" +
+                "                }\n" +
+                "            }\n" +
+                "        },\n" +
+                "        \"scope\": {\n" +
+                "            \"system\": {\n" +
+                "                \"all\": true\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }\n" +
+                "}";
+
+        HttpEntity<String> requestEntity;
+        ResponseEntity<Map> res;
+        try {
+            requestEntity = new HttpEntity<>(requestBody, headers);
+            res = restTemplate.postForEntity(url, requestEntity, Map.class);
+        } catch (RuntimeException e) {
+            return null;
+        }
+
+        Map<String, Object> resToken = (Map<String, Object>) res.getBody().get("token");
+        Map<String, Object> resUser = (Map<String, Object>) resToken.get("user");
+        String userId = (String) resUser.get("id");
+        String token = res.getHeaders().getFirst("X-Subject-Token");
+
+        return token;
+    }
+
+    private String getProjectToken(String unscopedToken, String projectId) {
+
+        String url = keystone + "/auth/tokens";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+
+        String requestBody = "{\n" +
+                "    \"auth\": {\n" +
+                "        \"identity\": {\n" +
+                "            \"methods\": [\n" +
+                "                \"token\"\n" +
+                "            ],\n" +
+                "            \"token\": {\n" +
+                "                \"id\": \"" + unscopedToken +"\"\n" +
+                "            }\n" +
+                "        },\n" +
+                "        \"scope\": {\n" +
+                "            \"project\": {\n" +
+                "                \"id\": \""+ projectId +"\"\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }\n" +
+                "}";
+
+        HttpEntity<String> requestEntity;
+        ResponseEntity<Map> res;
+        try {
+            requestEntity = new HttpEntity<>(requestBody, headers);
+            res = restTemplate.postForEntity(url, requestEntity, Map.class);
+        } catch (HttpClientErrorException.Forbidden e) {
+            return unscopedToken;
+        }
+        catch (RuntimeException e) {
+            e.printStackTrace();
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+
+        Map<String, Object> resToken = (Map<String, Object>) res.getBody().get("token");
+        Map<String, Object> resUser = (Map<String, Object>) resToken.get("user");
+        String userId = (String) resUser.get("id");
+        String token = res.getHeaders().getFirst("X-Subject-Token");
+
+        return token;
+    }
+
+
     // 특정 사용자의 특정 프로젝트 내 최고 권한 반환
     public Map<String, String> getBestRoleWithinProject(String token, String projectId) throws JsonProcessingException {
+
         return getBestRoleWithinProject(Map.of(
                 "id", validateTokenAndGetUserId(token),
-                "token", token),
+                "token", getProjectToken(token, projectId)),
                 projectId);
     }
 
@@ -107,7 +201,7 @@ public class AuthService {
         String url = keystone + "/role_assignments?user.id=" + userId + "&effective&include_names=true&scope.project.id=" + projectId;
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("X-Auth-Token", getAdminToken());
+        headers.set("X-Auth-Token", token);
 
         HttpEntity<String> requestEntity = new HttpEntity<>(headers);
         ResponseEntity<String> res = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
@@ -151,7 +245,7 @@ public class AuthService {
         String url = keystone + "/users/" + userId + "/projects";
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("X-Auth-Token", getAdminToken());
+        headers.set("X-Auth-Token", token);
 
         HttpEntity<String> requestEntity = new HttpEntity<>(headers);
         ResponseEntity<String> res = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
@@ -172,16 +266,43 @@ public class AuthService {
     private String validateTokenAndGetUserId(String token) throws JsonProcessingException {
         String url = keystone + "/auth/tokens";
         HttpHeaders headers = new HttpHeaders();
-        headers.set("X-Auth-Token", getAdminToken());
+        headers.set("X-Auth-Token", token);
         headers.set("X-Subject-Token", token);
         HttpEntity<String> requestEntity = new HttpEntity<>(headers);
         ResponseEntity<String> res;
         try {
             res = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
         } catch (HttpClientErrorException.NotFound e) {
+            System.out.println("validate");
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
         return objectMapper.readTree(res.getBody()).path("token").path("user").path("id").asText();
+
+    }
+
+    private Boolean isAdmin(Map<String, String> user) throws JsonProcessingException {
+        String url = keystone + "/role_assignments?user.id=" + user.get("id") + "&scope.system&include_names";
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Auth-Token", user.get("token"));
+        HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+        ResponseEntity<String> res;
+        try {
+            res = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            System.out.println("runtime");
+            return false;
+        }
+        JsonNode node = objectMapper.readTree(res.getBody()).path("role_assignments");
+        String system_all = node.path("scope").path("system").path("all").asText();
+        String role = node.path("role").path("name").asText();
+        System.out.println("role: " + role);
+        if (system_all.equals("true") && role.equals("admin")) {
+            System.out.println(system_all);
+            return true;
+        }
+        System.out.println("hi");
+        return false;
 
     }
 }
