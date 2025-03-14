@@ -115,17 +115,42 @@ public class ForwardingService {
         Forwarding forwarding = forwardingRepository.findByForwardingIdAndIsDeleted(forwardingId, false)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FORWARDING));
 
+        forwarding.edit(dto);
+
         /* 중복 검증 */
-        if (forwardingRepository.existsByInstanceIpAndInstancePortAndIsDeleted(dto.getInstanceIp(), dto.getInstancePort(), false)) {
+        if (!(dto.getInstanceIp() == null && dto.getInstancePort() == null) &&
+                forwardingRepository.existsByInstanceIpAndInstancePortAndIsDeleted(forwarding.getInstanceIp()
+                , forwarding.getInstancePort()
+                , false)) {
             throw new CustomException(ErrorCode.DUPLICATED_INSTANCE_INFO);
         }
 
-        if (forwardingRepository.existsByServerPortAndIsDeleted(dto.getServerPort(), false)) {
+        if (dto.getServerPort() != null && forwardingRepository.existsByServerPortAndIsDeleted(dto.getServerPort(), false)) {
             throw new CustomException(ErrorCode.DUPLICATED_SERVER_PORT);
         }
 
-        /* 정보 수정 */
-        forwarding.edit(dto);
+        /* 파일 수정 */
+        String content = forwardingTemplate.getPortForwardingWithTCP(forwarding.getServerPort(),
+                forwarding.getInstanceIp(),
+                forwarding.getInstancePort(),
+                forwarding.getName());
+        String confPath = "/data/nginx/stream/" + forwarding.getForwardingId() + ".conf";
+        File file = new File(confPath);
+        if (!file.exists()) {
+            throw new CustomException(ErrorCode.NOT_FOUND_FORWARDING, "Conf 파일이 존재하지 않아 수정할 수 없습니다");
+        }
+
+        try {
+            BufferedWriter bw = new BufferedWriter(new FileWriter(file, true)); // 예외처리 필요
+            bw.write(content);
+            bw.flush();
+            bw.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new CustomException(ErrorCode.FAIL_UPDATE_CONF, "포트포워딩 Conf 파일을 수정하지 못했습니다");
+        }
+
+        /* DB 정보 수정 */
         forwardingRepository.save(forwarding);
     }
 
