@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "routing")
+@Table(name = "certificate")
 @Getter
 @Builder
 @NoArgsConstructor
@@ -40,7 +40,7 @@ public class Certificate extends BaseTimeEntity {
 
     private Boolean isDeleted;
 
-    private String metadata;
+    private String description;
 
 
 }

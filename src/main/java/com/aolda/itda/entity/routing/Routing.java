@@ -27,7 +27,7 @@ public class Routing extends BaseTimeEntity {
     private User user;
 
     @OneToOne
-    @JoinColumn(name = "certificate_id")
+    @JoinColumn(name = "certificate_id", nullable = false)
     private Certificate certificate;
 
     private String projectId;
@@ -38,5 +38,6 @@ public class Routing extends BaseTimeEntity {
 
     private Boolean isDeleted;
 
+    private String description;
 
 }

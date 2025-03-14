@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
@@ -79,8 +78,13 @@ public class AuthService {
                 "}";
 
         HttpEntity<String> requestEntity = new HttpEntity<>(requestBody, headers);
-        ResponseEntity<Map> res = restTemplate.postForEntity(url, requestEntity, Map.class);
-
+        ResponseEntity<Map> res;
+        try {
+            res = restTemplate.postForEntity(url, requestEntity, Map.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new CustomException(ErrorCode.INVALID_USER_INFO);
+        }
         Map<String, Object> resToken = (Map<String, Object>) res.getBody().get("token");
         Map<String, Object> resUser = (Map<String, Object>) resToken.get("user");
         String userId = (String) resUser.get("id");
@@ -263,7 +267,7 @@ public class AuthService {
         return lists;
     }
 
-    private String validateTokenAndGetUserId(String token) throws JsonProcessingException {
+    public String validateTokenAndGetUserId(String token) throws JsonProcessingException {
         String url = keystone + "/auth/tokens";
         HttpHeaders headers = new HttpHeaders();
         headers.set("X-Auth-Token", token);
@@ -273,7 +277,6 @@ public class AuthService {
         try {
             res = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
         } catch (HttpClientErrorException.NotFound e) {
-            System.out.println("validate");
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
         return objectMapper.readTree(res.getBody()).path("token").path("user").path("id").asText();
@@ -290,18 +293,14 @@ public class AuthService {
             res = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
         } catch (RuntimeException e) {
             e.printStackTrace();
-            System.out.println("runtime");
             return false;
         }
         JsonNode node = objectMapper.readTree(res.getBody()).path("role_assignments");
         String system_all = node.path("scope").path("system").path("all").asText();
         String role = node.path("role").path("name").asText();
-        System.out.println("role: " + role);
         if (system_all.equals("true") && role.equals("admin")) {
-            System.out.println(system_all);
             return true;
         }
-        System.out.println("hi");
         return false;
 
     }
