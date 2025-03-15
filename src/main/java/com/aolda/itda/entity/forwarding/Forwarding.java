@@ -1,0 +1,71 @@
+package com.aolda.itda.entity.forwarding;
+
+import com.aolda.itda.dto.forwarding.ForwardingDTO;
+import com.aolda.itda.entity.BaseTimeEntity;
+import com.aolda.itda.entity.user.User;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Table(name = "forwarding")
+@Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class Forwarding extends BaseTimeEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(nullable = false)
+    private Long forwardingId;
+
+    @OneToOne
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    private String projectId;
+
+    private String serverIp;
+
+    private String serverPort;
+
+    private String instanceIp;
+
+    private String instancePort;
+
+    private Boolean isDeleted;
+
+    private String name;
+
+    public ForwardingDTO toForwardingDTO() {
+        return ForwardingDTO.builder()
+                .id(forwardingId)
+                .name(name)
+                .serverPort(serverPort)
+                .instanceIp(instanceIp)
+                .instancePort(instancePort)
+                .createdAt(getCreatedAt())
+                .updatedAt(getUpdatedAt())
+                .build();
+    }
+
+    public void edit(ForwardingDTO dto) {
+        this.name = dto.getName() != null ? dto.getName() : this.name;
+        this.serverPort = dto.getServerPort() != null &&
+                dto.getServerPort().matches("^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$")
+                ? dto.getServerPort() : this.serverPort;
+        this.instanceIp = dto.getInstanceIp() != null &&
+                dto.getInstanceIp().matches("^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$")
+                ? dto.getInstanceIp() : this.instanceIp;
+        this.instancePort = dto.getInstancePort() != null &&
+                dto.getInstancePort().matches("^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$")
+                ? dto.getInstancePort() : this.instancePort;
+    }
+
+    public void delete() {
+        this.isDeleted = true;
+    }
+}
