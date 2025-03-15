@@ -95,7 +95,7 @@ public class ForwardingService {
 
         /* conf 파일 작성 및 예외 처리 */
         try {
-            BufferedWriter bw = new BufferedWriter(new FileWriter(file, true)); // 예외처리 필요
+            BufferedWriter bw = new BufferedWriter(new FileWriter(file, false)); // 예외처리 필요
             bw.write(content);
             bw.flush();
             bw.close();
