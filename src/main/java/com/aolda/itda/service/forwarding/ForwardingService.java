@@ -162,21 +162,31 @@ public class ForwardingService {
         Forwarding forwarding = forwardingRepository.findByForwardingIdAndIsDeleted(forwardingId, false)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FORWARDING));
 
-        forwarding.edit(dto);
 
         /* 중복 검증 */
-        if (!(dto.getInstanceIp() == null && dto.getInstancePort() == null) &&
-                forwardingRepository.existsByInstanceIpAndInstancePortAndIsDeleted(forwarding.getInstanceIp()
-                , forwarding.getInstancePort()
-                , false)) {
-            throw new CustomException(ErrorCode.DUPLICATED_INSTANCE_INFO);
-        }
-
         if (dto.getServerPort() != null && forwardingRepository.existsByServerPortAndIsDeleted(dto.getServerPort(), false)) {
+            System.out.println(dto.getServerPort());
+            System.out.println(forwarding.getServerPort());
+            forwardingRepository.existsByServerPortAndIsDeleted(dto.getServerPort(), false);
             throw new CustomException(ErrorCode.DUPLICATED_SERVER_PORT);
         }
 
+        if (!(dto.getInstanceIp() == null && dto.getInstancePort() == null) &&
+                forwardingRepository.existsByInstanceIpAndInstancePortAndIsDeleted(
+                        dto.getInstanceIp() == null ? forwarding.getInstanceIp() : dto.getInstanceIp()
+                , dto.getInstancePort() == null ? forwarding.getInstancePort() : dto.getInstancePort()
+                , false)) {
+            System.out.println(dto.getInstanceIp());
+            System.out.println(forwarding.getInstanceIp());
+            System.out.println(forwardingRepository.existsByInstanceIpAndInstancePortAndIsDeleted(
+                    dto.getInstanceIp() == null ? forwarding.getInstanceIp() : dto.getInstanceIp()
+                    , dto.getInstancePort() == null ? forwarding.getInstancePort() : dto.getInstancePort()
+                    , false));
+            throw new CustomException(ErrorCode.DUPLICATED_INSTANCE_INFO);
+        }
+
         /* 파일 수정 */
+        forwarding.edit(dto);
         String content = forwardingTemplate.getPortForwardingWithTCP(forwarding.getServerPort(),
                 forwarding.getInstanceIp(),
                 forwarding.getInstancePort(),
