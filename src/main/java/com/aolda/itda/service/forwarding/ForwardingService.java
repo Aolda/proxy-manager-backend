@@ -7,12 +7,20 @@ import com.aolda.itda.exception.CustomException;
 import com.aolda.itda.exception.ErrorCode;
 import com.aolda.itda.repository.forwarding.ForwardingRepository;
 import com.aolda.itda.template.ForwardingTemplate;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -21,16 +29,20 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Map;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
+@Slf4j
 public class ForwardingService {
 
     @Value("${spring.server.base-ip}")
     private String serverBaseIp;
     private final ForwardingTemplate forwardingTemplate;
     private final ForwardingRepository forwardingRepository;
+    private final RestTemplate restTemplate = new RestTemplate();
 
     /* 포트포워딩 정보 조회 */
     public ForwardingDTO getForwarding(Long forwardingId) {
@@ -95,18 +107,53 @@ public class ForwardingService {
 
         /* conf 파일 작성 및 예외 처리 */
         try {
-            BufferedWriter bw = new BufferedWriter(new FileWriter(file, true)); // 예외처리 필요
+            BufferedWriter bw = new BufferedWriter(new FileWriter(file, false)); // 예외처리 필요
             bw.write(content);
             bw.flush();
             bw.close();
         } catch (Exception e) {
             e.printStackTrace();
-            if (file.exists()) {
-                file.delete();
+            if (file.delete()) {
+                throw new CustomException(ErrorCode.FAIL_DELETE_CONF);
             }
             throw new CustomException(ErrorCode.FAIL_CREATE_CONF, "포트포워딩 Conf 파일을 작성하지 못했습니다");
         }
 
+        /* nginx test */
+        String url = "http://nginx:8081/nginx-api/test";
+        try {
+            restTemplate.getForEntity(url, String.class);
+        } catch (HttpServerErrorException.InternalServerError e) {
+            log.error("[nginxApiException] {} : {}", e.getResponseBodyAsString(), e.getMessage());
+            if (file.delete()) {
+                throw new CustomException(ErrorCode.FAIL_NGINX_CONF_TEST, "(롤백 실패)");
+            }
+            throw new CustomException(ErrorCode.FAIL_NGINX_CONF_TEST);
+        } catch (Exception e) {
+            log.error("[RestClientException] {} : {}", "Nginx Conf Test (forwarding)", e.getMessage());
+            if (file.delete()) {
+                throw new CustomException(ErrorCode.FAIL_NGINX_CONF_TEST, "(롤백 실패)");
+            }
+            throw new CustomException(ErrorCode.FAIL_NGINX_CONF_TEST);
+        }
+
+        /* nginx reload */
+        url = "http://nginx:8081/nginx-api/reload";
+        try {
+            restTemplate.getForEntity(url, String.class);
+        } catch (HttpServerErrorException.InternalServerError e) {
+            log.error("[nginxApiException] {} : {}", e.getResponseBodyAsString(), e.getMessage());
+            if (file.delete()) {
+                throw new CustomException(ErrorCode.FAIL_NGINX_CONF_TEST, "(롤백 실패)");
+            }
+            throw new CustomException(ErrorCode.FAIL_NGINX_CONF_RELOAD);
+        } catch (Exception e) {
+            log.error("[RestClientException] {} : {}", "Nginx Conf Reload (forwarding)", e.getMessage());
+            if (file.delete()) {
+                throw new CustomException(ErrorCode.FAIL_NGINX_CONF_TEST, "(롤백 실패)");
+            }
+            throw new CustomException(ErrorCode.FAIL_NGINX_CONF_RELOAD);
+        }
 
     }
 
@@ -115,21 +162,31 @@ public class ForwardingService {
         Forwarding forwarding = forwardingRepository.findByForwardingIdAndIsDeleted(forwardingId, false)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FORWARDING));
 
-        forwarding.edit(dto);
 
         /* 중복 검증 */
-        if (!(dto.getInstanceIp() == null && dto.getInstancePort() == null) &&
-                forwardingRepository.existsByInstanceIpAndInstancePortAndIsDeleted(forwarding.getInstanceIp()
-                , forwarding.getInstancePort()
-                , false)) {
-            throw new CustomException(ErrorCode.DUPLICATED_INSTANCE_INFO);
-        }
-
         if (dto.getServerPort() != null && forwardingRepository.existsByServerPortAndIsDeleted(dto.getServerPort(), false)) {
+            System.out.println(dto.getServerPort());
+            System.out.println(forwarding.getServerPort());
+            forwardingRepository.existsByServerPortAndIsDeleted(dto.getServerPort(), false);
             throw new CustomException(ErrorCode.DUPLICATED_SERVER_PORT);
         }
 
+        if (!(dto.getInstanceIp() == null && dto.getInstancePort() == null) &&
+                forwardingRepository.existsByInstanceIpAndInstancePortAndIsDeleted(
+                        dto.getInstanceIp() == null ? forwarding.getInstanceIp() : dto.getInstanceIp()
+                , dto.getInstancePort() == null ? forwarding.getInstancePort() : dto.getInstancePort()
+                , false)) {
+            System.out.println(dto.getInstanceIp());
+            System.out.println(forwarding.getInstanceIp());
+            System.out.println(forwardingRepository.existsByInstanceIpAndInstancePortAndIsDeleted(
+                    dto.getInstanceIp() == null ? forwarding.getInstanceIp() : dto.getInstanceIp()
+                    , dto.getInstancePort() == null ? forwarding.getInstancePort() : dto.getInstancePort()
+                    , false));
+            throw new CustomException(ErrorCode.DUPLICATED_INSTANCE_INFO);
+        }
+
         /* 파일 수정 */
+        forwarding.edit(dto);
         String content = forwardingTemplate.getPortForwardingWithTCP(forwarding.getServerPort(),
                 forwarding.getInstanceIp(),
                 forwarding.getInstancePort(),
@@ -140,14 +197,72 @@ public class ForwardingService {
             throw new CustomException(ErrorCode.NOT_FOUND_FORWARDING, "Conf 파일이 존재하지 않아 수정할 수 없습니다");
         }
 
+        Path backup;
         try {
-            BufferedWriter bw = new BufferedWriter(new FileWriter(file, true)); // 예외처리 필요
+            backup = Files.createTempFile("temp_", ".tmp");
+            Files.copy(Paths.get(confPath), backup, StandardCopyOption.REPLACE_EXISTING
+            , StandardCopyOption.COPY_ATTRIBUTES);
+
+            BufferedWriter bw = new BufferedWriter(new FileWriter(file, false));
             bw.write(content);
             bw.flush();
             bw.close();
         } catch (Exception e) {
             e.printStackTrace();
             throw new CustomException(ErrorCode.FAIL_UPDATE_CONF, "포트포워딩 Conf 파일을 수정하지 못했습니다");
+        }
+
+        /* nginx test */
+        String url = "http://nginx:8081/nginx-api/test";
+        try {
+            restTemplate.getForEntity(url, String.class);
+        } catch (HttpServerErrorException.InternalServerError e) {
+            log.error("[nginxApiException] {} : {}", e.getResponseBodyAsString(), e.getMessage());
+            try {
+                Files.copy(backup, Paths.get(confPath), StandardCopyOption.REPLACE_EXISTING
+                        , StandardCopyOption.COPY_ATTRIBUTES);
+                Files.delete(backup);
+            } catch (IOException e1) {
+                throw new CustomException(ErrorCode.FAIL_UPDATE_CONF, "(포트포워딩 Conf 파일 수정)");
+            }
+
+            throw new CustomException(ErrorCode.FAIL_NGINX_CONF_TEST);
+        } catch (RuntimeException e) {
+            log.error("[RestClientException] {} : {}", "Nginx Conf Test (forwarding)", e.getMessage());
+            try {
+                Files.copy(backup, Paths.get(confPath), StandardCopyOption.REPLACE_EXISTING
+                        , StandardCopyOption.COPY_ATTRIBUTES);
+                Files.delete(backup);
+            } catch (IOException e1) {
+                throw new CustomException(ErrorCode.FAIL_UPDATE_CONF, "(포트포워딩 Conf 파일 수정)");
+            }
+            throw new CustomException(ErrorCode.FAIL_NGINX_CONF_TEST);
+        }
+
+        /* nginx reload */
+        url = "http://nginx:8081/nginx-api/reload";
+        try {
+            restTemplate.getForEntity(url, String.class);
+        } catch (HttpServerErrorException.InternalServerError e) {
+            log.error("[nginxApiException] {} : {}", e.getResponseBodyAsString(), e.getMessage());
+            try {
+                Files.copy(backup, Paths.get(confPath), StandardCopyOption.REPLACE_EXISTING
+                        , StandardCopyOption.COPY_ATTRIBUTES);
+                Files.delete(backup);
+            } catch (IOException e1) {
+                throw new CustomException(ErrorCode.FAIL_UPDATE_CONF, "(포트포워딩 Conf 파일 수정)");
+            }
+            throw new CustomException(ErrorCode.FAIL_NGINX_CONF_RELOAD);
+        } catch (RuntimeException e) {
+            log.error("[RestClientException] {} : {}", "Nginx Conf Reload (forwarding)", e.getMessage());
+            try {
+                Files.copy(backup, Paths.get(confPath), StandardCopyOption.REPLACE_EXISTING
+                , StandardCopyOption.COPY_ATTRIBUTES);
+                Files.delete(backup);
+            } catch (IOException e1) {
+                throw new CustomException(ErrorCode.FAIL_UPDATE_CONF, "(포트포워딩 Conf 파일 수정)");
+            }
+            throw new CustomException(ErrorCode.FAIL_NGINX_CONF_RELOAD);
         }
 
         /* DB 정보 수정 */
@@ -161,9 +276,55 @@ public class ForwardingService {
 
         /* 파일 삭제 */
         String confPath = "/data/nginx/stream/" + forwarding.getForwardingId() + ".conf";
-        File file = new File(confPath);
-        if (!file.delete()) {
-            throw new CustomException(ErrorCode.NOT_FOUND_FORWARDING, "Conf 파일이 존재하지 않아 삭제할 수 없습니다");
+        String deletePath = confPath + ".deleted";
+        try {
+            Files.move(Paths.get(confPath), Paths.get(deletePath));
+        } catch (IOException e) {
+            throw new CustomException(ErrorCode.FAIL_DELETE_CONF);
+        }
+
+        /* nginx test */
+        String url = "http://nginx:8081/nginx-api/test";
+        try {
+            restTemplate.getForEntity(url, String.class);
+        } catch (HttpServerErrorException.InternalServerError e) {
+            log.error("[nginxApiException] {} : {}", e.getResponseBodyAsString(), e.getMessage());
+            try {
+                Files.move(Paths.get(deletePath), Paths.get(confPath));
+            } catch (IOException e1) {
+                throw new CustomException(ErrorCode.FAIL_ROLL_BACK, "(포트포워딩 Conf 삭제)");
+            }
+            throw new CustomException(ErrorCode.FAIL_NGINX_CONF_TEST);
+        } catch (Exception e) {
+            log.error("[RestClientException] {} : {}", "Nginx Conf Test (forwarding)", e.getMessage());
+            try {
+                Files.move(Paths.get(deletePath), Paths.get(confPath));
+            } catch (IOException e1) {
+                throw new CustomException(ErrorCode.FAIL_ROLL_BACK, "(포트포워딩 Conf 삭제)");
+            }
+            throw new CustomException(ErrorCode.FAIL_NGINX_CONF_TEST);
+        }
+
+        /* nginx reload */
+        url = "http://nginx:8081/nginx-api/reload";
+        try {
+            restTemplate.getForEntity(url, String.class);
+        } catch (HttpServerErrorException.InternalServerError e) {
+            log.error("[nginxApiException] {} : {}", e.getResponseBodyAsString(), e.getMessage());
+            try {
+                Files.move(Paths.get(deletePath), Paths.get(confPath));
+            } catch (IOException e1) {
+                throw new CustomException(ErrorCode.FAIL_ROLL_BACK, "(포트포워딩 Conf 삭제)");
+            }
+            throw new CustomException(ErrorCode.FAIL_NGINX_CONF_RELOAD);
+        } catch (Exception e) {
+            log.error("[RestClientException] {} : {}", "Nginx Conf Reload (forwarding)", e.getMessage());
+            try {
+                Files.move(Paths.get(deletePath), Paths.get(confPath));
+            } catch (IOException e1) {
+                throw new CustomException(ErrorCode.FAIL_ROLL_BACK, "(포트포워딩 Conf 삭제)");
+            }
+            throw new CustomException(ErrorCode.FAIL_NGINX_CONF_RELOAD);
         }
 
         /* DB */
