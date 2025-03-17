@@ -1,5 +1,6 @@
 package com.aolda.itda.controller.routing;
 
+import com.aolda.itda.dto.forwarding.ForwardingDTO;
 import com.aolda.itda.dto.routing.RoutingDTO;
 import com.aolda.itda.service.routing.RoutingService;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,13 @@ import org.springframework.web.bind.annotation.*;
 public class RoutingController {
 
     private final RoutingService routingService;
+
+    @PostMapping("/forwarding")
+    public ResponseEntity<Object> create(@RequestParam String projectId,
+                                         @RequestBody RoutingDTO dto) {
+        routingService.createRouting(projectId, dto);
+        return ResponseEntity.ok().build();
+    }
 
     @GetMapping("/routing")
     public ResponseEntity<Object> view(@RequestParam Long routingId) {
