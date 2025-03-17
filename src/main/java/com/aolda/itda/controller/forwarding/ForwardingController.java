@@ -2,6 +2,7 @@ package com.aolda.itda.controller.forwarding;
 
 import com.aolda.itda.dto.forwarding.ForwardingDTO;
 import com.aolda.itda.service.forwarding.ForwardingService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
