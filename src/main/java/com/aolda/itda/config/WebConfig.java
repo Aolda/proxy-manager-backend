@@ -25,7 +25,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        String[] excludeAuth = {"/error", "/api/auth/*" };
+        String[] excludeAuth = {"/error", "/api/auth/*", "/api/*" };
 
         registry.addInterceptor(authInterceptor)
                 .addPathPatterns("/**")

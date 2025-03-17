@@ -35,6 +35,6 @@ public class Log extends BaseTimeEntity {
     @Enumerated(EnumType.STRING)
     private Action action;
 
-    private String metadata;
+    private String description;
 
 }

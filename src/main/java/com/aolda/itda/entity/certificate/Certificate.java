@@ -42,5 +42,7 @@ public class Certificate extends BaseTimeEntity {
 
     private String description;
 
-
+    public String formatDomain() {
+        return domain == null ? null : domain.replace("*", "_");
+    }
 }
