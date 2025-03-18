@@ -25,11 +25,11 @@ public class Routing extends BaseTimeEntity {
     private Long routingId;
 
     @OneToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id")
     private User user;
 
     @OneToOne
-    @JoinColumn(name = "certificate_id", nullable = false)
+    @JoinColumn(name = "certificate_id")
     private Certificate certificate;
 
     private String projectId;

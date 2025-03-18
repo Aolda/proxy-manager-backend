@@ -25,7 +25,7 @@ public class RoutingDTO {
     @NotBlank
     private String port;
     private Long id;
-    @NotBlank
+    @NotNull
     private Long certificateId;
 
     private LocalDateTime createdAt;

@@ -14,7 +14,7 @@ public class RoutingController {
 
     private final RoutingService routingService;
 
-    @PostMapping("/forwarding")
+    @PostMapping("/routing")
     public ResponseEntity<Object> create(@RequestParam String projectId,
                                          @RequestBody RoutingDTO dto) {
         routingService.createRouting(projectId, dto);
