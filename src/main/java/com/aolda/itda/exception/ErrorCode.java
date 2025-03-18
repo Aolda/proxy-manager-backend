@@ -10,6 +10,7 @@ public enum ErrorCode {
 
     // User
     INVALID_USER_INFO(HttpStatus.BAD_REQUEST, "잘못된 회원 정보입니다"),
+    UNAUTHORIZED_USER(HttpStatus.BAD_REQUEST, "권한이 없는 사용자입니다"),
 
     // Token
     INVALID_TOKEN(HttpStatus.BAD_REQUEST, "잘못된 토큰입니다"),

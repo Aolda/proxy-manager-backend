@@ -3,9 +3,12 @@ package com.aolda.itda.controller.routing;
 import com.aolda.itda.dto.forwarding.ForwardingDTO;
 import com.aolda.itda.dto.routing.RoutingDTO;
 import com.aolda.itda.service.routing.RoutingService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -22,8 +25,9 @@ public class RoutingController {
     }
 
     @GetMapping("/routing")
-    public ResponseEntity<Object> view(@RequestParam Long routingId) {
-        return ResponseEntity.ok(routingService.getRouting(routingId));
+    public ResponseEntity<Object> view(@RequestParam Long routingId,
+                                       HttpServletRequest request) {
+        return ResponseEntity.ok(routingService.getRouting(routingId, (List<String>) request.getAttribute("projects")));
     }
 
     @GetMapping("/routings")
@@ -33,14 +37,16 @@ public class RoutingController {
 
     @PatchMapping("/routing")
     public ResponseEntity<Object> edit(@RequestParam Long routingId,
-                                       @RequestBody RoutingDTO dto) {
-        routingService.editRouting(routingId, dto);
+                                       @RequestBody RoutingDTO dto,
+                                       HttpServletRequest request) {
+        routingService.editRouting(routingId, dto, (List<String>) request.getAttribute("projects"));
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/routing")
-    public ResponseEntity<Object> delete(@RequestParam Long routingId) {
-        routingService.deleteRouting(routingId);
+    public ResponseEntity<Object> delete(@RequestParam Long routingId,
+                                         HttpServletRequest request) {
+        routingService.deleteRouting(routingId, (List<String>) request.getAttribute("projects"));
         return ResponseEntity.ok().build();
     }
 

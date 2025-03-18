@@ -239,7 +239,7 @@ public class AuthService {
     }
 
     // 특정 사용자의 참여 프로젝트 반환
-    private List<ProjectIdAndNameDTO> getProjectsWithUser(Map<String, String> user) throws JsonProcessingException {
+    public List<ProjectIdAndNameDTO> getProjectsWithUser(Map<String, String> user) throws JsonProcessingException {
         String userId = user.get("id");
         String token = user.get("token");
         if (userId == null || token == null) {
@@ -281,6 +281,12 @@ public class AuthService {
         }
         return objectMapper.readTree(res.getBody()).path("token").path("user").path("id").asText();
 
+    }
+
+    public void validateProjectAuth(List<String> projects, String projectId) {
+        if (!projects.contains(projectId)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_USER);
+        }
     }
 
     private Boolean isAdmin(Map<String, String> user) throws JsonProcessingException {

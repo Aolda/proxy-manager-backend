@@ -1,13 +1,16 @@
 package com.aolda.itda.service.forwarding;
 
 import com.aolda.itda.dto.PageResp;
+import com.aolda.itda.dto.auth.ProjectIdAndNameDTO;
 import com.aolda.itda.dto.forwarding.ForwardingDTO;
 import com.aolda.itda.entity.forwarding.Forwarding;
 import com.aolda.itda.exception.CustomException;
 import com.aolda.itda.exception.ErrorCode;
 import com.aolda.itda.repository.forwarding.ForwardingRepository;
+import com.aolda.itda.service.AuthService;
 import com.aolda.itda.template.ForwardingTemplate;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -42,12 +46,17 @@ public class ForwardingService {
     private String serverBaseIp;
     private final ForwardingTemplate forwardingTemplate;
     private final ForwardingRepository forwardingRepository;
+    private final AuthService authService;
     private final RestTemplate restTemplate = new RestTemplate();
 
     /* 포트포워딩 정보 조회 */
-    public ForwardingDTO getForwarding(Long forwardingId) {
+    public ForwardingDTO getForwarding(Long forwardingId, List<String> projects) {
         Forwarding forwarding = forwardingRepository.findByForwardingIdAndIsDeleted(forwardingId, false)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FORWARDING));
+
+        /* 프로젝트 권한 검증 */
+        authService.validateProjectAuth(projects, forwarding.getProjectId());
+
         return forwarding.toForwardingDTO();
     }
 
@@ -158,10 +167,12 @@ public class ForwardingService {
     }
 
     /* 포트포워딩 정보 수정 */
-    public void editForwarding(Long forwardingId, ForwardingDTO dto) {
+    public void editForwarding(Long forwardingId, ForwardingDTO dto, List<String> projects) {
         Forwarding forwarding = forwardingRepository.findByForwardingIdAndIsDeleted(forwardingId, false)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FORWARDING));
 
+        /* 프로젝트 권한 검증 */
+        authService.validateProjectAuth(projects, forwarding.getProjectId());
 
         /* 중복 검증 */
         if (dto.getServerPort() != null && forwardingRepository.existsByServerPortAndIsDeleted(dto.getServerPort(), false)) {
@@ -270,9 +281,12 @@ public class ForwardingService {
     }
 
     /* 포트포워딩 삭제 (소프트) */
-    public void deleteForwarding(Long forwardingId) {
+    public void deleteForwarding(Long forwardingId, List<String> projects) {
         Forwarding forwarding = forwardingRepository.findByForwardingIdAndIsDeleted(forwardingId, false)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FORWARDING));
+
+        /* 프로젝트 권한 검증 */
+        authService.validateProjectAuth(projects, forwarding.getProjectId());
 
         /* 파일 삭제 */
         String confPath = "/data/nginx/stream/" + forwarding.getForwardingId() + ".conf";
