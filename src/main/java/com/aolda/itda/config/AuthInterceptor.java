@@ -1,10 +1,9 @@
 package com.aolda.itda.config;
 
-import com.aolda.itda.dto.auth.ProjectIdAndNameDTO;
+import com.aolda.itda.dto.auth.IdAndNameDTO;
 import com.aolda.itda.exception.CustomException;
 import com.aolda.itda.exception.ErrorCode;
 import com.aolda.itda.service.AuthService;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +13,6 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Component
@@ -59,9 +57,10 @@ public class AuthInterceptor implements HandlerInterceptor {
 
         /* 프로젝트 리스트 조회 */
         List<String> projects = authService.getProjectsWithUser(Map.of("id", userId, "token", token))
-                        .stream().map(ProjectIdAndNameDTO::getId)
+                        .stream().map(IdAndNameDTO::getId)
                         .toList();
         request.setAttribute("projects", projects);
+        request.setAttribute("user", Map.of("id", userId, "token", token));
         return true;
 
     }

@@ -1,7 +1,6 @@
 package com.aolda.itda.service.forwarding;
 
 import com.aolda.itda.dto.PageResp;
-import com.aolda.itda.dto.auth.ProjectIdAndNameDTO;
 import com.aolda.itda.dto.forwarding.ForwardingDTO;
 import com.aolda.itda.entity.forwarding.Forwarding;
 import com.aolda.itda.exception.CustomException;
@@ -9,20 +8,14 @@ import com.aolda.itda.exception.ErrorCode;
 import com.aolda.itda.repository.forwarding.ForwardingRepository;
 import com.aolda.itda.service.AuthService;
 import com.aolda.itda.template.ForwardingTemplate;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.BufferedWriter;
@@ -34,7 +27,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @Transactional
@@ -71,7 +63,7 @@ public class ForwardingService {
     }
 
     /* 포트포워딩 생성 */
-    public void createForwarding(String projectId, ForwardingDTO dto) {
+    public ForwardingDTO createForwarding(String projectId, ForwardingDTO dto) {
 
         /* 입력 DTO 검증 */
         validateDTO(dto);
@@ -163,7 +155,7 @@ public class ForwardingService {
             }
             throw new CustomException(ErrorCode.FAIL_NGINX_CONF_RELOAD);
         }
-
+        return forwarding.toForwardingDTO();
     }
 
     /* 포트포워딩 정보 수정 */

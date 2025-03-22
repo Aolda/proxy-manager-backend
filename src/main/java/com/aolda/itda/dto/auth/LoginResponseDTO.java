@@ -13,5 +13,5 @@ import java.util.List;
 @Builder
 public class LoginResponseDTO {
     private Boolean isAdmin;
-    private List<ProjectIdAndNameDTO> projects;
+    private List<IdAndNameDTO> projects;
 }

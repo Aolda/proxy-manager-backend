@@ -54,7 +54,6 @@ public class RoutingService {
 
     /* Routing 목록 조회 */
     public PageResp<RoutingDTO> getRoutings(String projectId) {
-        // project id 확인 필요
         return PageResp.<RoutingDTO>builder()
                 .contents(routingRepository.findByProjectIdAndIsDeleted(projectId, false)
                         .stream()
@@ -63,7 +62,7 @@ public class RoutingService {
     }
 
     /* Routing 생성 */
-    public void createRouting(String projectId, RoutingDTO dto) {
+    public RoutingDTO createRouting(String projectId, RoutingDTO dto) {
         /* 입력 DTO 검증 */
         validateDTO(dto);
 
@@ -157,6 +156,7 @@ public class RoutingService {
             throw new CustomException(ErrorCode.FAIL_NGINX_CONF_RELOAD);
         }
 
+        return routing.toRoutingDTO();
     }
 
     /* Routing 수정 */
@@ -166,9 +166,6 @@ public class RoutingService {
 
         /* 프로젝트 권한 검증 */
         authService.validateProjectAuth(projects, routing.getProjectId());
-
-        /* 입력 DTO 검증 */
-        validateDTO(dto);
 
         /* 중복 검증 */
         if (dto.getDomain() != null && routingRepository.existsByDomainAndIsDeleted(dto.getDomain(), false)) {
@@ -182,7 +179,9 @@ public class RoutingService {
 
         /* 파일 수정 */
         routing.edit(dto, certificate);
-        String content = routingTemplate.getRouting(routing.toRoutingDTO(), certificate == null ? null : certificate.formatDomain());
+        RoutingDTO tmp = routing.toRoutingDTO();
+        if (tmp.getCertificateId() == null) tmp.setCertificateId( (long) -1);
+        String content = routingTemplate.getRouting(tmp, certificate == null ? null : certificate.formatDomain());
         String confPath = "/data/nginx/proxy_host/" + routing.getRoutingId() + ".conf";
         File file = new File(confPath);
         if (!file.exists()) {
