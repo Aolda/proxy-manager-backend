@@ -1,5 +1,7 @@
 package com.aolda.itda.entity.log;
 
+import com.aolda.itda.dto.auth.IdAndNameDTO;
+import com.aolda.itda.dto.log.LogDTO;
 import com.aolda.itda.entity.BaseTimeEntity;
 import com.aolda.itda.entity.user.User;
 import jakarta.persistence.*;
@@ -21,7 +23,7 @@ public class Log extends BaseTimeEntity {
     @Column(nullable = false)
     private Long logId;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
@@ -36,5 +38,17 @@ public class Log extends BaseTimeEntity {
     private Action action;
 
     private String description;
+
+    public LogDTO toLogDTO() {
+        return LogDTO.builder()
+                .id(logId)
+                .user(IdAndNameDTO.builder().id(user.getKeystoneId()).name(user.getKeystoneUsername()).build())
+                .action(action)
+                .type(objectType)
+                .objectId(objectId)
+                .description(description)
+                .createdAt(getCreatedAt())
+                .build();
+    }
 
 }

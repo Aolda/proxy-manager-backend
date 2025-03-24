@@ -15,7 +15,7 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PageResp<T> {
     private Integer totalPages;
-    private Integer totalElements;
+    private Long totalElements;
     private Integer size;
     private List<T> contents;
     private Boolean first;

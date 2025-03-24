@@ -8,6 +8,7 @@ import com.aolda.itda.exception.CustomException;
 import com.aolda.itda.exception.ErrorCode;
 import com.aolda.itda.repository.certificate.CertificateRepository;
 import com.aolda.itda.repository.routing.RoutingRepository;
+import com.aolda.itda.service.AuthService;
 import com.aolda.itda.template.RoutingTemplate;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -26,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 
 @Service
 @Transactional
@@ -35,20 +37,23 @@ public class RoutingService {
 
     private final RoutingRepository routingRepository;
     private final CertificateRepository certificateRepository;
+    private final AuthService authService;
     private final RoutingTemplate routingTemplate;
     private final RestTemplate restTemplate = new RestTemplate();
 
     /* Routing 조회 */
-    public RoutingDTO getRouting(Long routingId) {
-        // project id 확인 필요
+    public RoutingDTO getRouting(Long routingId, List<String> projects) {
         Routing routing = routingRepository.findByRoutingIdAndIsDeleted(routingId, false)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_ROUTING));
+
+        /* 프로젝트 권한 검증 */
+        authService.validateProjectAuth(projects, routing.getProjectId());
+
         return routing.toRoutingDTO();
     }
 
     /* Routing 목록 조회 */
     public PageResp<RoutingDTO> getRoutings(String projectId) {
-        // project id 확인 필요
         return PageResp.<RoutingDTO>builder()
                 .contents(routingRepository.findByProjectIdAndIsDeleted(projectId, false)
                         .stream()
@@ -57,7 +62,7 @@ public class RoutingService {
     }
 
     /* Routing 생성 */
-    public void createRouting(String projectId, RoutingDTO dto) {
+    public RoutingDTO createRouting(String projectId, RoutingDTO dto) {
         /* 입력 DTO 검증 */
         validateDTO(dto);
 
@@ -151,15 +156,16 @@ public class RoutingService {
             throw new CustomException(ErrorCode.FAIL_NGINX_CONF_RELOAD);
         }
 
+        return routing.toRoutingDTO();
     }
 
     /* Routing 수정 */
-    public void editRouting(Long routingId, RoutingDTO dto) {
+    public void editRouting(Long routingId, RoutingDTO dto, List<String> projects) {
         Routing routing = routingRepository.findByRoutingIdAndIsDeleted(routingId, false)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_ROUTING));
 
-        /* 입력 DTO 검증 */
-        validateDTO(dto);
+        /* 프로젝트 권한 검증 */
+        authService.validateProjectAuth(projects, routing.getProjectId());
 
         /* 중복 검증 */
         if (dto.getDomain() != null && routingRepository.existsByDomainAndIsDeleted(dto.getDomain(), false)) {
@@ -173,7 +179,9 @@ public class RoutingService {
 
         /* 파일 수정 */
         routing.edit(dto, certificate);
-        String content = routingTemplate.getRouting(routing.toRoutingDTO(), certificate == null ? null : certificate.formatDomain());
+        RoutingDTO tmp = routing.toRoutingDTO();
+        if (tmp.getCertificateId() == null) tmp.setCertificateId( (long) -1);
+        String content = routingTemplate.getRouting(tmp, certificate == null ? null : certificate.formatDomain());
         String confPath = "/data/nginx/proxy_host/" + routing.getRoutingId() + ".conf";
         File file = new File(confPath);
         if (!file.exists()) {
@@ -253,9 +261,12 @@ public class RoutingService {
     }
 
     /* Routing 삭제 */
-    public void deleteRouting(Long routingId) {
+    public void deleteRouting(Long routingId, List<String> projects) {
         Routing routing = routingRepository.findByRoutingIdAndIsDeleted(routingId, false)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_ROUTING));
+
+        /* 프로젝트 권한 검증 */
+        authService.validateProjectAuth(projects, routing.getProjectId());
 
         /* 파일 삭제 */
         String confPath = "/data/nginx/proxy_host/" + routing.getRoutingId() + ".conf";

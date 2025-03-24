@@ -2,9 +2,11 @@ package com.aolda.itda.service;
 
 import com.aolda.itda.dto.auth.LoginRequestDTO;
 import com.aolda.itda.dto.auth.LoginResponseDTO;
-import com.aolda.itda.dto.auth.ProjectIdAndNameDTO;
+import com.aolda.itda.dto.auth.IdAndNameDTO;
+import com.aolda.itda.entity.user.User;
 import com.aolda.itda.exception.CustomException;
 import com.aolda.itda.exception.ErrorCode;
+import com.aolda.itda.repository.user.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,6 +33,7 @@ public class AuthService {
     private String adminPassword;
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final UserRepository userRepository;
 
     // 사용자 로그인 후 토큰 발행 및 Role 반환
     public LoginResponseDTO userLogin(HttpServletResponse response, LoginRequestDTO loginRequestDTO) throws JsonProcessingException {
@@ -42,6 +45,13 @@ public class AuthService {
 
         if (userId == null || token == null) {
             throw new CustomException(ErrorCode.INVALID_USER_INFO);
+        }
+
+
+        User entity = userRepository.findByKeystoneUsername(userId).orElse(null);
+        if (entity == null) {
+            userRepository.save(User.builder().keystoneId(validateTokenAndGetUserId(token)).
+                    keystoneUsername(loginRequestDTO.getId()).build());
         }
 
         response.addHeader("X-Subject-Token", systemToken != null ? systemToken : token);
@@ -239,7 +249,7 @@ public class AuthService {
     }
 
     // 특정 사용자의 참여 프로젝트 반환
-    private List<ProjectIdAndNameDTO> getProjectsWithUser(Map<String, String> user) throws JsonProcessingException {
+    public List<IdAndNameDTO> getProjectsWithUser(Map<String, String> user) throws JsonProcessingException {
         String userId = user.get("id");
         String token = user.get("token");
         if (userId == null || token == null) {
@@ -257,12 +267,12 @@ public class AuthService {
         JsonNode node = objectMapper.readTree(res.getBody());
         ArrayNode arrayNode = (ArrayNode) node.get("projects");
 
-        List<ProjectIdAndNameDTO> lists = new ArrayList<>();
+        List<IdAndNameDTO> lists = new ArrayList<>();
 
         for (JsonNode assignment : arrayNode) {
             String projectId = assignment.path("id").asText();
             String projectName = assignment.path("name").asText();
-            lists.add(new ProjectIdAndNameDTO(projectId, projectName));
+            lists.add(new IdAndNameDTO(projectId, projectName));
         }
         return lists;
     }
@@ -283,7 +293,13 @@ public class AuthService {
 
     }
 
-    private Boolean isAdmin(Map<String, String> user) throws JsonProcessingException {
+    public void validateProjectAuth(List<String> projects, String projectId) {
+        if (projects != null && !projects.contains(projectId)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_USER);
+        }
+    }
+
+    public Boolean isAdmin(Map<String, String> user) throws JsonProcessingException {
         String url = keystone + "/role_assignments?user.id=" + user.get("id") + "&scope.system&include_names";
         HttpHeaders headers = new HttpHeaders();
         headers.set("X-Auth-Token", user.get("token"));

@@ -10,6 +10,8 @@ public enum ErrorCode {
 
     // User
     INVALID_USER_INFO(HttpStatus.BAD_REQUEST, "잘못된 회원 정보입니다"),
+    NOT_FOUND_USER(HttpStatus.BAD_REQUEST, "존재하지 않는 사용자입니다"),
+    UNAUTHORIZED_USER(HttpStatus.BAD_REQUEST, "권한이 없는 사용자입니다"),
 
     // Token
     INVALID_TOKEN(HttpStatus.BAD_REQUEST, "잘못된 토큰입니다"),
@@ -19,6 +21,9 @@ public enum ErrorCode {
 
     // Routing
     NOT_FOUND_ROUTING(HttpStatus.BAD_REQUEST, "라우팅 파일이 존재하지 않습니다"),
+    
+    // Routing
+    NOT_FOUND_LOG(HttpStatus.BAD_REQUEST, "로그가 존재하지 않습니다"),
 
     // Certificate
     NOT_FOUND_CERTIFICATE(HttpStatus.BAD_REQUEST, "SSL 인증서가 존재하지 않습니다"),

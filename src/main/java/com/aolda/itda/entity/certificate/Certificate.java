@@ -23,7 +23,7 @@ public class Certificate extends BaseTimeEntity {
     @Column(nullable = false)
     private Long certificateId;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(nullable = false, name = "user_id")
     private User user;
 

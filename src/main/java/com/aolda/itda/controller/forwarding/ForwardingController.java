@@ -2,10 +2,13 @@ package com.aolda.itda.controller.forwarding;
 
 import com.aolda.itda.dto.forwarding.ForwardingDTO;
 import com.aolda.itda.service.forwarding.ForwardingService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -22,8 +25,8 @@ public class ForwardingController {
     }
 
     @GetMapping("/forwarding")
-    public ResponseEntity<Object> view(@RequestParam Long forwardingId) {
-        return ResponseEntity.ok(forwardingService.getForwarding(forwardingId));
+    public ResponseEntity<Object> view(@RequestParam Long forwardingId, HttpServletRequest request) {
+        return ResponseEntity.ok(forwardingService.getForwarding(forwardingId, (List<String>) request.getAttribute("projects")));
     }
 
     @GetMapping("/forwardings")
@@ -33,14 +36,16 @@ public class ForwardingController {
 
     @PatchMapping("/forwarding")
     public ResponseEntity<Object> edit(@RequestParam Long forwardingId,
-                                         @RequestBody ForwardingDTO dto) {
-        forwardingService.editForwarding(forwardingId, dto);
+                                         @RequestBody ForwardingDTO dto,
+                                       HttpServletRequest request) {
+        forwardingService.editForwarding(forwardingId, dto, (List<String>) request.getAttribute("projects") );
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/forwarding")
-    public ResponseEntity<Object> delete(@RequestParam Long forwardingId) {
-        forwardingService.deleteForwarding(forwardingId);
+    public ResponseEntity<Object> delete(@RequestParam Long forwardingId,
+                                         HttpServletRequest request) {
+        forwardingService.deleteForwarding(forwardingId, (List<String>) request.getAttribute("projects"));
         return ResponseEntity.ok().build();
     }
 
