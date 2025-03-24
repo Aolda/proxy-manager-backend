@@ -20,10 +20,6 @@ public class Forwarding extends BaseTimeEntity {
     @Column(nullable = false)
     private Long forwardingId;
 
-    @OneToOne
-    @JoinColumn(name = "user_id")
-    private User user;
-
     private String projectId;
 
     private String serverIp;
@@ -40,7 +36,6 @@ public class Forwarding extends BaseTimeEntity {
 
     public Forwarding(Forwarding forwarding) {
         this.forwardingId = forwarding.getForwardingId();
-        this.user = forwarding.getUser();
         this.projectId = forwarding.getProjectId();
         this.serverIp = forwarding.getServerIp();
         this.serverPort = forwarding.getServerPort();

@@ -23,6 +23,7 @@ import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -46,7 +47,7 @@ public class RoutingLogAspect {
 
         /* 사용자 조회 */
         HttpServletRequest request = ((ServletRequestAttributes) Objects.requireNonNull(RequestContextHolder.getRequestAttributes())).getRequest();
-        Map<String, String> tmp = (Map<String, String>) request.getSession().getAttribute("user");
+        Map<String, String> tmp = (Map<String, String>) request.getAttribute("user");
         User user = userRepository.findByKeystoneId(tmp.get("id")).orElseThrow(
                 () -> new CustomException(ErrorCode.NOT_FOUND_USER)
         );
@@ -58,16 +59,16 @@ public class RoutingLogAspect {
         String description = "name: " + routing.getName() + "\n"
                 + "domain: " + routing.getDomain() + "\n"
                 + "ip: " + routing.getInstanceIp() + "\n"
-                + "ip: " + routing.getInstancePort() + "\n"
-                + "certificateId: " + routing.getCertificate().getCertificateId() + "\n"
+                + "port: " + routing.getInstancePort() + "\n"
+                +  (routing.getCertificate() != null ? ("certificateId: " + routing.getCertificate().getCertificateId() + "\n") : "")
                 + "caching: " + routing.getCaching() + "\n";
 
         /* 로그 엔티티 저장 */
         logRepository.save(Log.builder()
                 .user(user)
-                .objectType(ObjectType.FORWARDING)
+                .objectType(ObjectType.ROUTING)
                 .objectId(routing.getRoutingId())
-                .action(Action.UPDATE)
+                .action(Action.CREATE)
                 .projectId(routing.getProjectId())
                 .description(description)
                 .build());
@@ -79,7 +80,7 @@ public class RoutingLogAspect {
 
         /* 사용자 조회 */
         HttpServletRequest request = ((ServletRequestAttributes) Objects.requireNonNull(RequestContextHolder.getRequestAttributes())).getRequest();
-        Map<String, String> tmp = (Map<String, String>) request.getSession().getAttribute("user");
+        Map<String, String> tmp = (Map<String, String>) request.getAttribute("user");
         User user = userRepository.findByKeystoneId(tmp.get("id")).orElseThrow(
                 () -> new CustomException(ErrorCode.NOT_FOUND_USER)
         );
@@ -94,28 +95,28 @@ public class RoutingLogAspect {
         String description = "name: " + routing.getName() + "\n"
                 + "domain: " + routing.getDomain() + "\n"
                 + "ip: " + routing.getInstanceIp() + "\n"
-                + "ip: " + routing.getInstancePort() + "\n"
-                + "certificateId: " + routing.getCertificate().getCertificateId() + "\n"
+                + "port: " + routing.getInstancePort() + "\n"
+                +  (routing.getCertificate() != null ? ("certificateId: " + routing.getCertificate().getCertificateId() + "\n") : "")
                 + "caching: " + routing.getCaching() + "\n";
 
         /* 로그 엔티티 저장 */
         logRepository.save(Log.builder()
                 .user(user)
-                .objectType(ObjectType.FORWARDING)
+                .objectType(ObjectType.ROUTING)
                 .objectId(routing.getRoutingId())
-                .action(Action.UPDATE)
+                .action(Action.DELETE)
                 .projectId(routing.getProjectId())
                 .description(description)
                 .build());
     }
 
     /* Update(edit) 로깅 */
-    @Around("execution(* com.aolda.itda.service.forwarding.*Service.*edit*(..))")
+    @Around("execution(* com.aolda.itda.service.routing.*Service.*edit*(..))")
     public Object editLogging(ProceedingJoinPoint joinPoint) throws Throwable {
 
         /* 사용자 조회 */
         HttpServletRequest request = ((ServletRequestAttributes) Objects.requireNonNull(RequestContextHolder.getRequestAttributes())).getRequest();
-        Map<String, String> tmp = (Map<String, String>) request.getSession().getAttribute("user");
+        Map<String, String> tmp = (Map<String, String>) request.getAttribute("user");
         User user = userRepository.findByKeystoneId(tmp.get("id")).orElseThrow(
                 () -> new CustomException(ErrorCode.NOT_FOUND_USER)
         );
@@ -136,17 +137,29 @@ public class RoutingLogAspect {
         Routing newObj = routingRepository.findByRoutingIdAndIsDeleted(id, false).orElse(null);
 
         /* 로그 메세지 작성 */
-        String description = "name: " + old.getName() + (old.getName().equals(newObj.getName()) ? "" : (" -> " + newObj.getName())) + "\n"
-                + "domain: " + old.getDomain() + (old.getDomain().equals(newObj.getDomain()) ? "" : (" -> " + newObj.getDomain())) + "\n"
-                + "ip: " + (old.getInstanceIp().equals(newObj.getInstanceIp()) ? "" : (" -> " + newObj.getInstanceIp())) + "\n"
-                + "port: " + (old.getInstancePort().equals(newObj.getInstancePort()) ? "" : (" -> " + newObj.getInstancePort())) + "\n"
-                + "certificateId: " + (old.getCertificate().getCertificateId() == newObj.getCertificate().getCertificateId() ? "" : (" -> " + newObj.getCertificate().getCertificateId()))
-                + "certificateId: " + (old.getCaching() == newObj.getCaching() ? "" : (" -> " + newObj.getCaching()));
+        String description = "name: " + old.getName() + (old.getName().equals(newObj.getName()) ? "" : " -> " + newObj.getName()) + "\n"
+                + "domain: " + old.getDomain() + (old.getDomain().equals(newObj.getDomain()) ? "" : " -> " + newObj.getDomain()) + "\n"
+                + "ip: " + old.getInstanceIp() + (old.getInstanceIp().equals(newObj.getInstanceIp()) ? "" : " -> " + newObj.getInstanceIp()) + "\n"
+                + "port: " + old.getInstancePort() + (old.getInstancePort().equals(newObj.getInstancePort()) ? "" : " -> " + newObj.getInstancePort()) + "\n";
+        if (old.getCertificate() == null) {
+            if (newObj.getCertificate() != null) {
+                description = description + "certificateId: null -> " + newObj.getCertificate().getCertificateId() + "\n";
+            }
+        }
+        else {
+            if (newObj.getCertificate() == null) {
+                description = description + "certificateId: " + old.getCertificate().getCertificateId() + " -> null\n";
+            }
+            else {
+                description = description + "certificateId: " + old.getCertificate().getCertificateId() + " -> " + newObj.getCertificate().getCertificateId() + "\n";
+            }
+        }
+        description = description + "caching: " + (old.getCaching() == newObj.getCaching() ? newObj.getCaching() : (" -> " + newObj.getCaching()));
 
         /* 로그 엔티티 저장 */
         logRepository.save(Log.builder()
                 .user(user)
-                .objectType(ObjectType.FORWARDING)
+                .objectType(ObjectType.ROUTING)
                 .objectId(newObj.getRoutingId())
                 .action(Action.UPDATE)
                 .projectId(newObj.getProjectId())

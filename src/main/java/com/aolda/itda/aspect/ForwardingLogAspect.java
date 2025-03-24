@@ -23,6 +23,7 @@ import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -46,7 +47,7 @@ public class ForwardingLogAspect {
 
         /* 사용자 조회 */
         HttpServletRequest request = ((ServletRequestAttributes) Objects.requireNonNull(RequestContextHolder.getRequestAttributes())).getRequest();
-        Map<String, String> tmp = (Map<String, String>) request.getSession().getAttribute("user");
+        Map<String, String> tmp = (Map<String, String>) request.getAttribute("user");
         User user = userRepository.findByKeystoneId(tmp.get("id")).orElseThrow(
                 () -> new CustomException(ErrorCode.NOT_FOUND_USER)
         );
@@ -65,7 +66,7 @@ public class ForwardingLogAspect {
                 .user(user)
                 .objectType(ObjectType.FORWARDING)
                 .objectId(forwarding.getForwardingId())
-                .action(Action.UPDATE)
+                .action(Action.CREATE)
                 .projectId(forwarding.getProjectId())
                 .description(description)
                 .build());
@@ -77,7 +78,7 @@ public class ForwardingLogAspect {
         
         /* 사용자 조회 */
         HttpServletRequest request = ((ServletRequestAttributes) Objects.requireNonNull(RequestContextHolder.getRequestAttributes())).getRequest();
-        Map<String, String> tmp = (Map<String, String>) request.getSession().getAttribute("user");
+        Map<String, String> tmp = (Map<String, String>) request.getAttribute("user");
         User user = userRepository.findByKeystoneId(tmp.get("id")).orElseThrow(
                 () -> new CustomException(ErrorCode.NOT_FOUND_USER)
         );
@@ -99,7 +100,7 @@ public class ForwardingLogAspect {
                 .user(user)
                 .objectType(ObjectType.FORWARDING)
                 .objectId(forwarding.getForwardingId())
-                .action(Action.UPDATE)
+                .action(Action.DELETE)
                 .projectId(forwarding.getProjectId())
                 .description(description)
                 .build());
@@ -111,7 +112,7 @@ public class ForwardingLogAspect {
         
         /* 사용자 조회 */
         HttpServletRequest request = ((ServletRequestAttributes) Objects.requireNonNull(RequestContextHolder.getRequestAttributes())).getRequest();
-        Map<String, String> tmp = (Map<String, String>) request.getSession().getAttribute("user");
+        Map<String, String> tmp = (Map<String, String>) request.getAttribute("user");
         User user = userRepository.findByKeystoneId(tmp.get("id")).orElseThrow(
                 () -> new CustomException(ErrorCode.NOT_FOUND_USER)
         );
@@ -134,8 +135,8 @@ public class ForwardingLogAspect {
         /* 로그 메세지 작성 */
         String description = "name: " + old.getName() + (old.getName().equals(newObj.getName()) ? "" : (" -> " + newObj.getName())) + "\n"
                 + "serverPort: " + old.getServerPort() + (old.getServerPort().equals(newObj.getServerPort()) ? "" : (" -> " + newObj.getServerPort())) + "\n"
-                + "instanceIp: " + (old.getInstanceIp().equals(newObj.getInstanceIp()) ? "" : (" -> " + newObj.getInstanceIp())) + "\n"
-                + "instancePort: " + (old.getInstancePort().equals(newObj.getInstancePort()) ? "" : (" -> " + newObj.getInstancePort()));
+                + "instanceIp: " + old.getInstanceIp() + (old.getInstanceIp().equals(newObj.getInstanceIp()) ? "" : (" -> " + newObj.getInstanceIp())) + "\n"
+                + "instancePort: " + old.getInstancePort() + (old.getInstancePort().equals(newObj.getInstancePort()) ? "" : (" -> " + newObj.getInstancePort()));
 
         /* 로그 엔티티 저장 */
         logRepository.save(Log.builder()

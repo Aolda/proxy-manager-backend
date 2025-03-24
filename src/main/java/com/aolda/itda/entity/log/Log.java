@@ -23,7 +23,7 @@ public class Log extends BaseTimeEntity {
     @Column(nullable = false)
     private Long logId;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 

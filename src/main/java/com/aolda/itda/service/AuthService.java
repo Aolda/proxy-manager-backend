@@ -51,7 +51,7 @@ public class AuthService {
         User entity = userRepository.findByKeystoneUsername(userId).orElse(null);
         if (entity == null) {
             userRepository.save(User.builder().keystoneId(validateTokenAndGetUserId(token)).
-                    keystoneUsername(userId).build());
+                    keystoneUsername(loginRequestDTO.getId()).build());
         }
 
         response.addHeader("X-Subject-Token", systemToken != null ? systemToken : token);

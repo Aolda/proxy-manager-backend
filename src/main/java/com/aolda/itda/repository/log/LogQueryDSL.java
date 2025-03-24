@@ -74,16 +74,15 @@ public class LogQueryDSL {
             builder.and(log.projectId.eq(projectId));
         }
 
-        /* 오브젝트 타입 조건 ( 기본 : ROUTING ) */
-        if (type.equals("certificate")) {
-            builder.and(log.objectType.eq(ObjectType.CERTIFICATE));
+        /* 오브젝트 타입 조건 */
+        if (type != null) {
+            switch (type) {
+                case "certificate" -> builder.and(log.objectType.eq(ObjectType.CERTIFICATE));
+                case "forwarding" -> builder.and(log.objectType.eq(ObjectType.FORWARDING));
+                case "routing" -> builder.and(log.objectType.eq(ObjectType.ROUTING));
+            }
         }
-        else if (type.equals("forwarding")) {
-            builder.and(log.objectType.eq(ObjectType.FORWARDING));
-        }
-        else {
-            builder.and(log.objectType.eq(ObjectType.ROUTING));
-        }
+
 
         /* 사용자 ID 조건 */
         if (username != null) {
@@ -91,14 +90,13 @@ public class LogQueryDSL {
         }
 
         /* CUD 조건 */
-        if (action.equals("create")) {
-            builder.and(log.action.eq(Action.CREATE));
-        } else if (action.equals("update")) {
-            builder.and(log.action.eq(Action.UPDATE));
-        } else if (action.equals("delete")) {
-            builder.and(log.action.eq(Action.DELETE));
+        if (action != null) {
+            switch (action) {
+                case "create" -> builder.and(log.action.eq(Action.CREATE));
+                case "update" -> builder.and(log.action.eq(Action.UPDATE));
+                case "delete" -> builder.and(log.action.eq(Action.DELETE));
+            }
         }
-
         return builder;
     }
 }
