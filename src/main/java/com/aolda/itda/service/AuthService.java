@@ -48,10 +48,14 @@ public class AuthService {
         }
 
 
-        User entity = userRepository.findByKeystoneUsername(userId).orElse(null);
+        User entity = userRepository.findByKeystoneId(userId).orElse(null);
         if (entity == null) {
-            userRepository.save(User.builder().keystoneId(validateTokenAndGetUserId(token)).
+            userRepository.save(User.builder().keystoneId(userId).
                     keystoneUsername(loginRequestDTO.getId()).build());
+        }
+        else if (!entity.getKeystoneUsername().equals(loginRequestDTO.getId())) {
+            entity.changeUsername(loginRequestDTO.getId());
+            userRepository.save(entity);
         }
 
         response.addHeader("X-Subject-Token", systemToken != null ? systemToken : token);

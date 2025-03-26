@@ -11,7 +11,7 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(value = CustomException.class)
     public ResponseEntity<ErrorResponse> handleCustomException(CustomException e) {
-        log.error("[handleCustomException] {} : {}", e.getErrorCode().name(), e.getErrorCode().getMessage());
+        log.error("[handleCustomException] {} : {}, {}", e.getErrorCode().name(), e.getErrorCode().getMessage(), e.getStackTrace());
         return ErrorResponse.fromException(e);
     }
 }

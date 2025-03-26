@@ -21,4 +21,8 @@ public class User {
 
     private String keystoneUsername;
     private String keystoneId;
+
+    public void changeUsername(String username) {
+        this.keystoneUsername = username;
+    }
 }
