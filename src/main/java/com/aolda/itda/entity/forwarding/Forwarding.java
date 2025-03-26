@@ -20,18 +20,24 @@ public class Forwarding extends BaseTimeEntity {
     @Column(nullable = false)
     private Long forwardingId;
 
+    @Column(length = 64)
     private String projectId;
 
+    @Column(length = 32)
     private String serverIp;
 
+    @Column(length = 8)
     private String serverPort;
 
+    @Column(length = 32)
     private String instanceIp;
 
+    @Column(length = 8)
     private String instancePort;
 
     private Boolean isDeleted;
 
+    @Column(length = 256)
     private String name;
 
     public Forwarding(Forwarding forwarding) {
