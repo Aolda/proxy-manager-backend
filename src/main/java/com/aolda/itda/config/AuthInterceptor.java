@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -56,9 +57,17 @@ public class AuthInterceptor implements HandlerInterceptor {
         }
 
         /* 프로젝트 리스트 조회 */
-        List<String> projects = authService.getProjectsWithUser(Map.of("id", userId, "token", token))
-                        .stream().map(IdAndNameDTO::getId)
-                        .toList();
+        List<String> projects;
+        if (authService.isAdmin(Map.of("id", userId, "token", token))) {
+            projects = authService.getAllProjects(token);
+        }
+
+        else {
+            projects = authService.getProjectsWithUser(Map.of("id", userId, "token", token))
+                    .stream().map(IdAndNameDTO::getId)
+                    .toList();
+        }
+
         request.setAttribute("projects", projects);
         request.setAttribute("user", Map.of("id", userId, "token", token));
         return true;

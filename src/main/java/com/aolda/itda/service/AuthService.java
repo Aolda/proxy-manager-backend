@@ -297,6 +297,31 @@ public class AuthService {
 
     }
 
+    public List<String> getAllProjects(String token) throws JsonProcessingException {
+        String url = keystone + "/projects";
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Auth-Token", token);
+        HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+        ResponseEntity<String> res;
+        try {
+            res = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+
+        JsonNode node = objectMapper.readTree(res.getBody());
+        ArrayNode arrayNode = (ArrayNode) node.get("projects");
+
+        List<String> lists = new ArrayList<>();
+
+        for (JsonNode assignment : arrayNode) {
+            lists.add(assignment.path("id").asText());
+        }
+
+        return lists;
+
+    }
+
     public void validateProjectAuth(List<String> projects, String projectId) {
         if (projects != null && !projects.contains(projectId)) {
             throw new CustomException(ErrorCode.UNAUTHORIZED_USER);

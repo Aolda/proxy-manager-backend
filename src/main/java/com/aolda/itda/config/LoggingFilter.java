@@ -23,16 +23,13 @@ public class LoggingFilter extends OncePerRequestFilter {
 
         // Request Body를 읽을 수 있도록 래핑
         ContentCachingRequestWrapper cachingRequest = new ContentCachingRequestWrapper(request);
-        System.out.println("필터 적용");
         filterChain.doFilter(cachingRequest, response);
 
         // 로그 기록
         logRequest(cachingRequest);
-        System.out.println("왜 안돼ㅐ");
     }
 
     private void logRequest(ContentCachingRequestWrapper request) {
-        System.out.println("되는거 맞아?");
         String ip = request.getRemoteAddr();
         String method = request.getMethod();
         String uri = request.getRequestURI();
