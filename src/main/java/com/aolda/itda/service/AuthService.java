@@ -297,7 +297,7 @@ public class AuthService {
 
     }
 
-    public List<String> getAllProjects(String token) throws JsonProcessingException {
+    public List<IdAndNameDTO> getAllProjects(String token) throws JsonProcessingException {
         String url = keystone + "/projects";
         HttpHeaders headers = new HttpHeaders();
         headers.set("X-Auth-Token", token);
@@ -312,10 +312,12 @@ public class AuthService {
         JsonNode node = objectMapper.readTree(res.getBody());
         ArrayNode arrayNode = (ArrayNode) node.get("projects");
 
-        List<String> lists = new ArrayList<>();
+        List<IdAndNameDTO> lists = new ArrayList<>();
 
         for (JsonNode assignment : arrayNode) {
-            lists.add(assignment.path("id").asText());
+            String projectId = assignment.path("id").asText();
+            String projectName = assignment.path("name").asText();
+            lists.add(new IdAndNameDTO(projectId, projectName));
         }
 
         return lists;

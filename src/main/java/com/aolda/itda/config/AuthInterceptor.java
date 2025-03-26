@@ -59,7 +59,8 @@ public class AuthInterceptor implements HandlerInterceptor {
         /* 프로젝트 리스트 조회 */
         List<String> projects;
         if (authService.isAdmin(Map.of("id", userId, "token", token))) {
-            projects = authService.getAllProjects(token);
+            projects = authService.getAllProjects(token).stream().map(IdAndNameDTO::getId)
+                    .toList();
         }
 
         else {
