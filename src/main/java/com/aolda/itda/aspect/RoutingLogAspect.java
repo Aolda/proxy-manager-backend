@@ -61,7 +61,7 @@ public class RoutingLogAspect {
                 + "ip: " + routing.getInstanceIp() + "\n"
                 + "port: " + routing.getInstancePort() + "\n"
                 +  (routing.getCertificate() != null ? ("certificateId: " + routing.getCertificate().getCertificateId() + "\n") : "")
-                + "caching: " + routing.getCaching() + "\n";
+                + "caching: " + routing.getCaching();
 
         /* 로그 엔티티 저장 */
         logRepository.save(Log.builder()
@@ -97,7 +97,7 @@ public class RoutingLogAspect {
                 + "ip: " + routing.getInstanceIp() + "\n"
                 + "port: " + routing.getInstancePort() + "\n"
                 +  (routing.getCertificate() != null ? ("certificateId: " + routing.getCertificate().getCertificateId() + "\n") : "")
-                + "caching: " + routing.getCaching() + "\n";
+                + "caching: " + routing.getCaching();
 
         /* 로그 엔티티 저장 */
         logRepository.save(Log.builder()
