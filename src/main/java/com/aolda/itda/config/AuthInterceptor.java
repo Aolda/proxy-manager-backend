@@ -43,10 +43,10 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (projectId != null) {
 
             try {
-                String role = authService.getBestRoleWithinProject(token, projectId).get("role");
-                if (!role.equals("admin")) {
-                    log.error("Unauthorized Token for URI {}: {}", request.getRequestURI(), request.getRemoteAddr());
+                authService.getBestRoleWithinProject(token, projectId).get("role");
+                if (!request.getMethod().equals("GET") && !authService.getBestRoleWithinProject(token, projectId).get("role").equals("admin")) {
                     throw new CustomException(ErrorCode.UNAUTHORIZED_USER, request.getRequestURI());
+
                 }
             } catch (Exception e) {
                 throw new CustomException(ErrorCode.UNAUTHORIZED_USER, request.getRequestURI());

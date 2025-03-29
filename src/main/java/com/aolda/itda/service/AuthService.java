@@ -96,7 +96,6 @@ public class AuthService {
         try {
             res = restTemplate.postForEntity(url, requestEntity, Map.class);
         } catch (Exception e) {
-            e.printStackTrace();
             throw new CustomException(ErrorCode.INVALID_USER_INFO);
         }
         Map<String, Object> resToken = (Map<String, Object>) res.getBody().get("token");
@@ -140,7 +139,7 @@ public class AuthService {
         try {
             requestEntity = new HttpEntity<>(requestBody, headers);
             res = restTemplate.postForEntity(url, requestEntity, Map.class);
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
             return null;
         }
 
@@ -185,8 +184,7 @@ public class AuthService {
         } catch (HttpClientErrorException.Forbidden e) {
             return unscopedToken;
         }
-        catch (RuntimeException e) {
-            e.printStackTrace();
+        catch (Exception e) {
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
 
@@ -290,7 +288,7 @@ public class AuthService {
         ResponseEntity<String> res;
         try {
             res = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
-        } catch (HttpClientErrorException.NotFound e) {
+        } catch (Exception e) {
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
         return objectMapper.readTree(res.getBody()).path("token").path("user").path("id").asText();
@@ -305,7 +303,7 @@ public class AuthService {
         ResponseEntity<String> res;
         try {
             res = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
-        } catch (HttpClientErrorException.NotFound e) {
+        } catch (Exception e) {
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
 
@@ -338,8 +336,7 @@ public class AuthService {
         ResponseEntity<String> res;
         try {
             res = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
-        } catch (RuntimeException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
             return false;
         }
         JsonNode node = objectMapper.readTree(res.getBody()).path("role_assignments");
