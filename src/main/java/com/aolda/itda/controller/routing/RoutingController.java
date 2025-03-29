@@ -31,8 +31,9 @@ public class RoutingController {
     }
 
     @GetMapping("/routings")
-    public ResponseEntity<Object> lists(@RequestParam String projectId) {
-        return ResponseEntity.ok(routingService.getRoutings(projectId));
+    public ResponseEntity<Object> lists(@RequestParam String projectId,
+                                        @RequestParam(required = false) String query) {
+        return ResponseEntity.ok(routingService.getRoutingsWithSearch(projectId, query));
     }
 
     @PatchMapping("/routing")

@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Service
 @Transactional
@@ -52,11 +53,20 @@ public class ForwardingService {
         return forwarding.toForwardingDTO();
     }
 
-    /* 포트포워딩 목록 조회 */
-    public PageResp<ForwardingDTO> getForwardings(String projectId) {
+    /* 포트포워딩 목록 조회 + 검색 */
+    public PageResp<ForwardingDTO> getForwardingsWithSearch(String projectId, String query) {
+
+        /* 입력 검증 */
+        if (query == null || query.isBlank()) {
+            return PageResp.<ForwardingDTO>builder()
+                    .contents(forwardingRepository.findByProjectIdAndIsDeleted(projectId, false)
+                            .stream()
+                            .map(Forwarding::toForwardingDTO)
+                            .toList()).build();
+        }
 
         return PageResp.<ForwardingDTO>builder()
-                .contents(forwardingRepository.findByProjectIdAndIsDeleted(projectId, false)
+                .contents(forwardingRepository.findWithSearch(projectId, query, false)
                         .stream()
                         .map(Forwarding::toForwardingDTO)
                         .toList()).build();

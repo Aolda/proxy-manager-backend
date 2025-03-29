@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Service
 @Transactional
@@ -52,10 +53,26 @@ public class RoutingService {
         return routing.toRoutingDTO();
     }
 
-    /* Routing 목록 조회 */
-    public PageResp<RoutingDTO> getRoutings(String projectId) {
+    /* Routing 목록 조회 + 검색 */
+    public PageResp<RoutingDTO> getRoutingsWithSearch(String projectId, String query) {
+
+        /* 입력 검증 */
+        if (query == null || query.isBlank()) {
+            return PageResp.<RoutingDTO>builder()
+                    .contents(routingRepository.findByProjectIdAndIsDeleted(projectId, false)
+                            .stream()
+                            .map(Routing::toRoutingDTO)
+                            .toList()).build();
+        }
+
+        /* 도메인 패턴 검증 */
+        String domainPattern = "^(\\*\\.)?([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}$";
+        if (Pattern.matches(domainPattern, query) && query.startsWith("*.")) {
+            query = query.substring(2);
+        }
+
         return PageResp.<RoutingDTO>builder()
-                .contents(routingRepository.findByProjectIdAndIsDeleted(projectId, false)
+                .contents(routingRepository.findWithSearch(projectId, query, false)
                         .stream()
                         .map(Routing::toRoutingDTO)
                         .toList()).build();

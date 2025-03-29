@@ -30,8 +30,9 @@ public class ForwardingController {
     }
 
     @GetMapping("/forwardings")
-    public ResponseEntity<Object> lists(@RequestParam String projectId) {
-        return ResponseEntity.ok(forwardingService.getForwardings(projectId));
+    public ResponseEntity<Object> lists(@RequestParam String projectId,
+                                        @RequestParam(required = false) String query) {
+        return ResponseEntity.ok(forwardingService.getForwardingsWithSearch(projectId, query));
     }
 
     @PatchMapping("/forwarding")
