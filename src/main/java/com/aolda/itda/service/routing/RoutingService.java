@@ -102,7 +102,6 @@ public class RoutingService {
                 throw new CustomException(ErrorCode.FAIL_CREATE_CONF, "중복된 라우팅 Conf 파일이 존재합니다");
             }
         } catch (IOException e) {
-            e.printStackTrace();
             throw new CustomException(ErrorCode.FAIL_CREATE_CONF);
         }
 
@@ -113,7 +112,6 @@ public class RoutingService {
             bw.flush();
             bw.close();
         } catch (Exception e) {
-            e.printStackTrace();
             if (file.delete()) {
                 throw new CustomException(ErrorCode.FAIL_DELETE_CONF);
             }
@@ -124,14 +122,7 @@ public class RoutingService {
         String url = "http://nginx:8081/nginx-api/test";
         try {
             restTemplate.getForEntity(url, String.class);
-        } catch (HttpServerErrorException.InternalServerError e) {
-            log.error("[nginxApiException] {} : {}", e.getResponseBodyAsString(), e.getMessage());
-            if (file.delete()) {
-                throw new CustomException(ErrorCode.FAIL_NGINX_CONF_TEST, "(롤백 실패)");
-            }
-            throw new CustomException(ErrorCode.FAIL_NGINX_CONF_TEST);
         } catch (Exception e) {
-            log.error("[RestClientException] {} : {}", "Nginx Conf Test (forwarding)", e.getMessage());
             if (file.delete()) {
                 throw new CustomException(ErrorCode.FAIL_NGINX_CONF_TEST, "(롤백 실패)");
             }
@@ -142,14 +133,7 @@ public class RoutingService {
         url = "http://nginx:8081/nginx-api/reload";
         try {
             restTemplate.getForEntity(url, String.class);
-        } catch (HttpServerErrorException.InternalServerError e) {
-            log.error("[nginxApiException] {} : {}", e.getResponseBodyAsString(), e.getMessage());
-            if (file.delete()) {
-                throw new CustomException(ErrorCode.FAIL_NGINX_CONF_TEST, "(롤백 실패)");
-            }
-            throw new CustomException(ErrorCode.FAIL_NGINX_CONF_RELOAD);
         } catch (Exception e) {
-            log.error("[RestClientException] {} : {}", "Nginx Conf Reload (forwarding)", e.getMessage());
             if (file.delete()) {
                 throw new CustomException(ErrorCode.FAIL_NGINX_CONF_TEST, "(롤백 실패)");
             }
@@ -199,7 +183,6 @@ public class RoutingService {
             bw.flush();
             bw.close();
         } catch (Exception e) {
-            e.printStackTrace();
             throw new CustomException(ErrorCode.FAIL_UPDATE_CONF, "라우팅 Conf 파일을 수정하지 못했습니다");
         }
 
@@ -207,19 +190,7 @@ public class RoutingService {
         String url = "http://nginx:8081/nginx-api/test";
         try {
             restTemplate.getForEntity(url, String.class);
-        } catch (HttpServerErrorException.InternalServerError e) {
-            log.error("[nginxApiException] {} : {}", e.getResponseBodyAsString(), e.getMessage());
-            try {
-                Files.copy(backup, Paths.get(confPath), StandardCopyOption.REPLACE_EXISTING
-                        , StandardCopyOption.COPY_ATTRIBUTES);
-                Files.delete(backup);
-            } catch (IOException e1) {
-                throw new CustomException(ErrorCode.FAIL_UPDATE_CONF, "(라우팅 Conf 파일 수정)");
-            }
-
-            throw new CustomException(ErrorCode.FAIL_NGINX_CONF_TEST);
         } catch (RuntimeException e) {
-            log.error("[RestClientException] {} : {}", "Nginx Conf Test (forwarding)", e.getMessage());
             try {
                 Files.copy(backup, Paths.get(confPath), StandardCopyOption.REPLACE_EXISTING
                         , StandardCopyOption.COPY_ATTRIBUTES);
@@ -234,18 +205,7 @@ public class RoutingService {
         url = "http://nginx:8081/nginx-api/reload";
         try {
             restTemplate.getForEntity(url, String.class);
-        } catch (HttpServerErrorException.InternalServerError e) {
-            log.error("[nginxApiException] {} : {}", e.getResponseBodyAsString(), e.getMessage());
-            try {
-                Files.copy(backup, Paths.get(confPath), StandardCopyOption.REPLACE_EXISTING
-                        , StandardCopyOption.COPY_ATTRIBUTES);
-                Files.delete(backup);
-            } catch (IOException e1) {
-                throw new CustomException(ErrorCode.FAIL_UPDATE_CONF, "(라우팅 Conf 파일 수정)");
-            }
-            throw new CustomException(ErrorCode.FAIL_NGINX_CONF_RELOAD);
         } catch (RuntimeException e) {
-            log.error("[RestClientException] {} : {}", "Nginx Conf Reload (forwarding)", e.getMessage());
             try {
                 Files.copy(backup, Paths.get(confPath), StandardCopyOption.REPLACE_EXISTING
                         , StandardCopyOption.COPY_ATTRIBUTES);
@@ -281,16 +241,7 @@ public class RoutingService {
         String url = "http://nginx:8081/nginx-api/test";
         try {
             restTemplate.getForEntity(url, String.class);
-        } catch (HttpServerErrorException.InternalServerError e) {
-            log.error("[nginxApiException] {} : {}", e.getResponseBodyAsString(), e.getMessage());
-            try {
-                Files.move(Paths.get(deletePath), Paths.get(confPath));
-            } catch (IOException e1) {
-                throw new CustomException(ErrorCode.FAIL_ROLL_BACK, "(라우팅 Conf 삭제)");
-            }
-            throw new CustomException(ErrorCode.FAIL_NGINX_CONF_TEST);
         } catch (Exception e) {
-            log.error("[RestClientException] {} : {}", "Nginx Conf Test (forwarding)", e.getMessage());
             try {
                 Files.move(Paths.get(deletePath), Paths.get(confPath));
             } catch (IOException e1) {
@@ -303,16 +254,7 @@ public class RoutingService {
         url = "http://nginx:8081/nginx-api/reload";
         try {
             restTemplate.getForEntity(url, String.class);
-        } catch (HttpServerErrorException.InternalServerError e) {
-            log.error("[nginxApiException] {} : {}", e.getResponseBodyAsString(), e.getMessage());
-            try {
-                Files.move(Paths.get(deletePath), Paths.get(confPath));
-            } catch (IOException e1) {
-                throw new CustomException(ErrorCode.FAIL_ROLL_BACK, "(라우팅 Conf 삭제)");
-            }
-            throw new CustomException(ErrorCode.FAIL_NGINX_CONF_RELOAD);
         } catch (Exception e) {
-            log.error("[RestClientException] {} : {}", "Nginx Conf Reload (forwarding)", e.getMessage());
             try {
                 Files.move(Paths.get(deletePath), Paths.get(confPath));
             } catch (IOException e1) {
