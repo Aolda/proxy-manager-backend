@@ -49,4 +49,13 @@ public class Certificate extends BaseTimeEntity {
     public String formatDomain() {
         return domain == null ? null : domain.replace("*", "_");
     }
+
+    public void setIsDeleted(boolean b) {
+    }
+
+    public void setDomain(String domain) {
+    }
+
+    public void setDescription(String description) {
+    }
 }
