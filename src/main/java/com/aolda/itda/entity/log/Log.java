@@ -27,16 +27,20 @@ public class Log extends BaseTimeEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(length = 64)
     private String projectId;
 
     @Enumerated(EnumType.STRING)
     private ObjectType objectType;
 
+    @Column(length = 64)
     private Long objectId;
 
     @Enumerated(EnumType.STRING)
     private Action action;
 
+    @Lob
+    @Column(length = 1024)
     private String description;
 
     public LogDTO toLogDTO() {

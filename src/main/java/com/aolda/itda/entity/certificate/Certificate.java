@@ -27,10 +27,13 @@ public class Certificate extends BaseTimeEntity {
     @JoinColumn(nullable = false, name = "user_id")
     private User user;
 
+    @Column(length = 64)
     private String projectId;
 
+    @Column(length = 64)
     private String domain;
 
+    @Column(length = 64)
     private String email;
 
     private LocalDateTime expiredAt;
@@ -40,6 +43,7 @@ public class Certificate extends BaseTimeEntity {
 
     private Boolean isDeleted;
 
+    @Column(length = 256)
     private String description;
 
     public String formatDomain() {

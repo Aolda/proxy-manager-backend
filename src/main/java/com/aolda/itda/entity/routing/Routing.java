@@ -28,18 +28,23 @@ public class Routing extends BaseTimeEntity {
     @JoinColumn(name = "certificate_id")
     private Certificate certificate;
 
+    @Column(length = 64)
     private String projectId;
 
+    @Column(length = 64)
     private String domain;
 
+    @Column(length = 32)
     private String instanceIp;
 
+    @Column(length = 8)
     private String instancePort;
 
     private Boolean isDeleted;
 
     private Boolean caching;
 
+    @Column(length = 256)
     private String name;
 
     public RoutingDTO toRoutingDTO() {

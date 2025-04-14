@@ -86,7 +86,7 @@ public class LogQueryDSL {
 
         /* 사용자 ID 조건 */
         if (username != null) {
-            builder.and(log.user.keystoneUsername.eq(username));
+            builder.and(log.user.keystoneUsername.contains(username));
         }
 
         /* CUD 조건 */

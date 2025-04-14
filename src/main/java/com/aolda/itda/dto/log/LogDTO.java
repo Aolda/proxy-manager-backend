@@ -3,6 +3,7 @@ package com.aolda.itda.dto.log;
 import com.aolda.itda.dto.auth.IdAndNameDTO;
 import com.aolda.itda.entity.log.Action;
 import com.aolda.itda.entity.log.ObjectType;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.querydsl.core.annotations.QueryProjection;
 import lombok.AllArgsConstructor;
@@ -22,7 +23,11 @@ public class LogDTO {
     private Action action;
     private ObjectType type;
     private Long objectId;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Seoul")
     private String description;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Seoul")
     private LocalDateTime createdAt;
 
     @QueryProjection
