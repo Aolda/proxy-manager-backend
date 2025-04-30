@@ -23,10 +23,6 @@ public class Certificate extends BaseTimeEntity {
     @Column(nullable = false)
     private Long certificateId;
 
-    @ManyToOne
-    @JoinColumn(nullable = false, name = "user_id")
-    private User user;
-
     @Column(length = 64)
     private String projectId;
 
@@ -57,5 +53,6 @@ public class Certificate extends BaseTimeEntity {
     }
 
     public void setDescription(String description) {
+
     }
 }

@@ -25,6 +25,7 @@ public class CertificateController {
     public ResponseEntity<Object> create(@RequestParam String projectId,
                                          @RequestBody CertificateDTO dto,
                                          HttpServletRequest request) {
+        System.out.println("1");
         certificateService.createCertificate(
                 projectId,
                 dto,
@@ -89,5 +90,6 @@ public class CertificateController {
         );
         return ResponseEntity.ok().build();
     }
+    /*인증서 검색*/
 
 }

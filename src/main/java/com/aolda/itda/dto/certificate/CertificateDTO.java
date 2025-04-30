@@ -1,5 +1,6 @@
 package com.aolda.itda.dto.certificate;
 
+import com.aolda.itda.entity.certificate.Challenge;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
@@ -12,10 +13,15 @@ import java.time.LocalDateTime;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CertificateDTO {
 
-    private Long certificateId;
-    private String projectId;
-    private String domain;
-    private LocalDateTime expiredAt;   // 필요 시
-    private Boolean isDeleted;
-    private String description;        // 추가 설명
+    private Long certificateId;          // 인증서 고유 ID
+    private String projectId;            // 프로젝트 식별자
+    private String domain;               // SSL 인증받을 도메인 주소
+    private String email;                // 도메인 소유자의 이메일
+    private LocalDateTime expiredAt;     // 인증서 만료일
+    private Challenge challenge;         // 챌린지 방식 (HTTP, DNS_CLOUDFLARE)
+    private Boolean isDeleted;           // 삭제 여부 (soft delete)
+    private String description;          // 설명 (필요시 자유롭게 작성)
 }
+/* 이메일, 챌린지 방식, http인지 dns인지... "*/
+//도메인, 소유자 이메일, 챌린지 방식 확실하게 들어가야함!!
+/*erd 보고 만들기*/

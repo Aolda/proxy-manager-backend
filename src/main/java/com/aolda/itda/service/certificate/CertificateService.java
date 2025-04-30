@@ -3,6 +3,7 @@ package com.aolda.itda.service.certificate;
 import com.aolda.itda.dto.PageResp;
 import com.aolda.itda.dto.certificate.CertificateDTO;
 import com.aolda.itda.entity.certificate.Certificate;
+import com.aolda.itda.entity.certificate.Challenge;
 import com.aolda.itda.exception.CustomException;
 import com.aolda.itda.exception.ErrorCode;
 import com.aolda.itda.repository.certificate.CertificateRepository;
@@ -14,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -52,10 +54,12 @@ public class CertificateService {
     }
 
     /* 인증서 생성 */
-    public CertificateDTO createCertificate(String projectId, CertificateDTO dto, List<String> projects) {
+    /*public CertificateDTO createCertificate(String projectId,
+                                            CertificateDTO dto,
+                                            List<String> projects) {
         // 프로젝트 권한 검증
         authService.validateProjectAuth(projects, projectId);
-
+        System.out.println("2");
         // DTO 유효성 검사
         validateDTO(dto);
 
@@ -67,9 +71,52 @@ public class CertificateService {
                 .build();
 
         certificateRepository.save(certificate);
-
+        System.out.println("3");
         // 생성 로직 (certbot 호출 등) 필요 시 추가
 
+        return toDTO(certificate);
+    }*/
+    /* 인증서 생성 + lego 호출 */
+    public CertificateDTO createCertificate(String projectId, CertificateDTO dto, List<String> projects) {
+
+        // 1) 권한 체크
+        authService.validateProjectAuth(projects, projectId);
+
+        // 2) DTO 검증
+        validateDTO(dto);
+
+        // 3) lego 명령어 구성
+        ProcessBuilder pb = buildLegoProcess(dto);
+
+        // 4) lego 실행
+        int exitCode;
+        try {
+            Process process = pb.start();
+            exitCode = process.waitFor();
+            if (exitCode != 0) {
+                String err = new String(process.getErrorStream().readAllBytes());
+                log.error("[lego-error] {}", err);
+                throw new CustomException(ErrorCode.FAIL_CREATE_CONF,
+                        "lego 오류: " + err);
+            }
+        } catch (Exception e) {
+            log.error("[lego-exec] {}", e.getMessage());
+            throw new CustomException(ErrorCode.FAIL_CREATE_CONF,
+                    "lego 실행 실패");
+        }
+
+        // 5) 엔티티 저장
+        Certificate certificate = Certificate.builder()
+                .projectId(projectId)
+                .domain(dto.getDomain())
+                .email(dto.getEmail())
+                .challenge(dto.getChallenge())
+                .expiredAt(dto.getExpiredAt())   // 필요 시 lego 출력 파싱
+                .isDeleted(false)
+                .description(dto.getDescription())
+                .build();
+
+        certificateRepository.save(certificate);
         return toDTO(certificate);
     }
 
@@ -134,4 +181,39 @@ public class CertificateService {
                 .expiredAt(certificate.getExpiredAt())
                 .build();
     }
+
+
+
+    /* lego ProcessBuilder 생성 */
+    private ProcessBuilder buildLegoProcess(CertificateDTO dto) {
+
+        String basePath = "/data/lego"; // 인증서 저장 루트(볼륨)
+        List<String> cmd = new ArrayList<>();
+        cmd.add("/usr/local/bin/lego");
+        cmd.add("--accept-tos");
+        cmd.add("--email");        cmd.add(dto.getEmail());
+        cmd.add("--path");         cmd.add(basePath);
+
+        if (dto.getChallenge() == Challenge.HTTP) {
+            cmd.add("--http");
+            cmd.add("--http.webroot");
+            cmd.add("/data/letsencrypt-acme-challenge");
+        } else if (dto.getChallenge() == Challenge.DNS_CLOUDFLARE) {
+            cmd.add("--dns");
+            cmd.add("cloudflare");
+            // CLOUDFLARE_API_TOKEN 환경변수를 컨테이너에 세팅했다고 가정
+        }
+
+        cmd.add("--domains");      cmd.add(dto.getDomain());
+        cmd.add("run");            // 최초 발급(run) / renew(갱신)
+
+        return new ProcessBuilder(cmd)
+                .redirectErrorStream(true);
+    }
 }
+
+
+
+// 여기서 매소드를 create로 해서 lego --accept-tos --email "email@example.com" --http --http.webroot data/letsencrypt-acme-challenge --path /data/lego --domains www.example.com run
+// 이거 이메일 . 도메인 으로 넣어서 실제 인증서 연동하기!!!
+// 그리고 Dto에 관리자 이메일, 인증서 완료일, 챌린지 방식 추가하기
