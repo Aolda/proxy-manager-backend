@@ -32,15 +32,15 @@ public class Certificate extends BaseTimeEntity {
     @Column(length = 64)
     private String email;
 
-    private LocalDateTime expiredAt;
+    private LocalDateTime expiredAt; //인증서 만료일
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     @Enumerated(EnumType.STRING)
     private Challenge challenge;
 
     private Boolean isDeleted;
 
-    @Column(length = 256)
-    private String description;
 
     public String formatDomain() {
         return domain == null ? null : domain.replace("*", "_");
@@ -52,7 +52,17 @@ public class Certificate extends BaseTimeEntity {
     public void setDomain(String domain) {
     }
 
-    public void setDescription(String description) {
+    //    public void setDescription(String description) {
+//
+//    }
+    @Transient
+    private String apiToken;
+
+    public void setExpiredAt(LocalDateTime localDateTime) {
 
     }
+
+    public void setEmail(String email) {
+    }
 }
+

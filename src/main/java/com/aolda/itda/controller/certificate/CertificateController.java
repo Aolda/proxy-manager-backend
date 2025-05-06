@@ -1,5 +1,6 @@
 package com.aolda.itda.controller.certificate;
 
+import com.aolda.itda.dto.PageResp;
 import com.aolda.itda.dto.certificate.CertificateDTO;
 import com.aolda.itda.service.certificate.CertificateService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,17 +20,17 @@ public class CertificateController {
     /**
      * 인증서 생성
      * POST /api/certificate?projectId=xxx
-     * Body: CertificateDTO
      */
     @PostMapping("/certificate")
-    public ResponseEntity<Object> create(@RequestParam String projectId,
-                                         @RequestBody CertificateDTO dto,
-                                         HttpServletRequest request) {
-        System.out.println("1");
+    public ResponseEntity<Void> create(
+            @RequestParam String projectId,
+            @RequestBody CertificateDTO dto,
+            HttpServletRequest request
+    ) {
         certificateService.createCertificate(
                 projectId,
                 dto,
-                (List<String>) request.getAttribute("projects") // Forwarding과 동일하게
+                (List<String>) request.getAttribute("projects")
         );
         return ResponseEntity.ok().build();
     }
@@ -39,8 +40,10 @@ public class CertificateController {
      * GET /api/certificate?certificateId=xxx
      */
     @GetMapping("/certificate")
-    public ResponseEntity<Object> view(@RequestParam Long certificateId,
-                                       HttpServletRequest request) {
+    public ResponseEntity<CertificateDTO> view(
+            @RequestParam Long certificateId,
+            HttpServletRequest request
+    ) {
         return ResponseEntity.ok(
                 certificateService.getCertificate(
                         certificateId,
@@ -50,25 +53,29 @@ public class CertificateController {
     }
 
     /**
-     * 인증서 목록 조회
-     * GET /api/certificates?projectId=xxx
+     * 인증서 목록 조회 (domain 필터링 optional)
+     * GET /api/certificates?projectId=xxx&domain=foo
      */
     @GetMapping("/certificates")
-    public ResponseEntity<Object> lists(@RequestParam String projectId) {
+    public ResponseEntity<PageResp<CertificateDTO>> lists(
+            @RequestParam String projectId,
+            @RequestParam(required = false) String domain
+    ) {
         return ResponseEntity.ok(
-                certificateService.getCertificates(projectId)
+                certificateService.getCertificates(projectId, domain)
         );
     }
 
     /**
      * 인증서 수정
      * PATCH /api/certificate?certificateId=xxx
-     * Body: CertificateDTO
      */
     @PatchMapping("/certificate")
-    public ResponseEntity<Object> edit(@RequestParam Long certificateId,
-                                       @RequestBody CertificateDTO dto,
-                                       HttpServletRequest request) {
+    public ResponseEntity<Void> edit(
+            @RequestParam Long certificateId,
+            @RequestBody CertificateDTO dto,
+            HttpServletRequest request
+    ) {
         certificateService.editCertificate(
                 certificateId,
                 dto,
@@ -82,14 +89,14 @@ public class CertificateController {
      * DELETE /api/certificate?certificateId=xxx
      */
     @DeleteMapping("/certificate")
-    public ResponseEntity<Object> delete(@RequestParam Long certificateId,
-                                         HttpServletRequest request) {
+    public ResponseEntity<Void> delete(
+            @RequestParam Long certificateId,
+            HttpServletRequest request
+    ) {
         certificateService.deleteCertificate(
                 certificateId,
                 (List<String>) request.getAttribute("projects")
         );
         return ResponseEntity.ok().build();
     }
-    /*인증서 검색*/
-
 }
