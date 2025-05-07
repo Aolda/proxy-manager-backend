@@ -78,7 +78,7 @@ public class CertificateService {
                 .domain(dto.getDomain())
                 .email(dto.getEmail())
                 .challenge(dto.getChallenge())
-                .expiredAt(LocalDateTime.now().plusDays(90))
+                .expiresAt(LocalDateTime.now().plusDays(90))
                 .isDeleted(false)
                 .apiToken(dto.getApiToken())
                 .build();
@@ -138,10 +138,10 @@ public class CertificateService {
                         .build();
                 executeLego(dto);
 
-                cert.setExpiredAt(LocalDateTime.now().plusDays(90));
+                cert.setExpiresAt(LocalDateTime.now().plusDays(90));
                 certificateRepository.save(cert);
                 log.info("renewed (id={}, newExpiry={})",
-                        cert.getCertificateId(), cert.getExpiredAt());
+                        cert.getCertificateId(), cert.getExpiresAt());
             } catch (Exception e) {
                 log.error("failed to renew (id={}, domain={}): {}",
                         cert.getCertificateId(), cert.getDomain(), e.getMessage());
@@ -161,12 +161,12 @@ public class CertificateService {
     /** Entity→DTO 변환 **/
     private CertificateDTO toDTO(Certificate cert) {
         return CertificateDTO.builder()
-                .certificateId(cert.getCertificateId())
+                .id(cert.getCertificateId())
 
                 .domain(cert.getDomain())
                 .email(cert.getEmail())
                 .challenge(cert.getChallenge())
-                .expiredAt(cert.getExpiredAt())
+                .expiresAt(cert.getExpiresAt())
                 .createdAt(cert.getCreatedAt())
                 .updatedAt(cert.getUpdatedAt())
                 .isDeleted(cert.getIsDeleted())

@@ -13,11 +13,11 @@ import java.time.LocalDateTime;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CertificateDTO {
 
-    private Long certificateId;          // 인증서 고유 ID
+    private Long id;          // 인증서 고유 ID
 //    private String projectId;            // 프로젝트 식별자
     private String domain;               // SSL 인증받을 도메인 주소
     private String email;                // 도메인 소유자의 이메일
-    private LocalDateTime expiredAt;     // 인증서 만료일
+    private LocalDateTime expiresAt;     // 인증서 만료일
     private LocalDateTime createdAt;    // 인증서 생성일
     private LocalDateTime updatedAt;    // 인증서 업데이트일
     private Challenge challenge;         // 챌린지 방식 (HTTP, DNS_CLOUDFLARE)

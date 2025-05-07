@@ -3,10 +3,7 @@ package com.aolda.itda.entity.certificate;
 import com.aolda.itda.entity.BaseTimeEntity;
 import com.aolda.itda.entity.user.User;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -26,13 +23,16 @@ public class Certificate extends BaseTimeEntity {
     @Column(length = 64)
     private String projectId;
 
+    @Setter
     @Column(length = 64)
     private String domain;
 
     @Column(length = 64)
+    @Setter
     private String email;
 
-    private LocalDateTime expiredAt; //인증서 만료일
+    @Setter
+    private LocalDateTime expiresAt; //인증서 만료일
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -47,22 +47,11 @@ public class Certificate extends BaseTimeEntity {
     }
 
     public void setIsDeleted(boolean b) {
+        this.isDeleted = b;
     }
 
-    public void setDomain(String domain) {
-    }
-
-    //    public void setDescription(String description) {
-//
-//    }
     @Transient
     private String apiToken;
 
-    public void setExpiredAt(LocalDateTime localDateTime) {
-
-    }
-
-    public void setEmail(String email) {
-    }
 }
 
