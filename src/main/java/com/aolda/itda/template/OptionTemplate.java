@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 public class OptionTemplate {
 
     public String getSSL(String certificateDomain) {
-        return "\nconf.d/include/letsencrypt-acme-challenge.conf;\n" +
+        return "\ninclude conf.d/include/letsencrypt-acme-challenge.conf;\n" +
                 "include conf.d/include/ssl-ciphers.conf;\n" +
                 "ssl_certificate /data/lego/certificates/" + certificateDomain + ".crt;\n" +
                 "ssl_certificate_key /data/lego/certificates/" + certificateDomain + ".key;\n";

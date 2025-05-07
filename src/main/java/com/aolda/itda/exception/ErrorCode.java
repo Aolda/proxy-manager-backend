@@ -41,7 +41,9 @@ public enum ErrorCode {
     FAIL_NGINX_CONF_RELOAD(HttpStatus.BAD_REQUEST, "Nginx 재시작에 실패했습니다"),
 
     FAIL_DELETE_CONF(HttpStatus.BAD_REQUEST, "Conf 파일을 삭제하지 못했습니다"),
-    FAIL_ROLL_BACK(HttpStatus.BAD_REQUEST, "롤백 실패");
+    FAIL_ROLL_BACK(HttpStatus.BAD_REQUEST, "롤백 실패"),
+
+    FAIL_CREATE_CERT(HttpStatus.BAD_REQUEST, "인증서 생성에 실패했습니다");
 
     private final HttpStatus status;
     private final String message;

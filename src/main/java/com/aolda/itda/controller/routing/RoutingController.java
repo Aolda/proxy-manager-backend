@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -19,7 +20,7 @@ public class RoutingController {
 
     @PostMapping("/routing")
     public ResponseEntity<Object> create(@RequestParam String projectId,
-                                         @RequestBody RoutingDTO dto) {
+                                         @RequestBody RoutingDTO dto) throws IOException {
         routingService.createRouting(projectId, dto);
         return ResponseEntity.ok().build();
     }

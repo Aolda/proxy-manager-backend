@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
@@ -79,7 +80,7 @@ public class RoutingService {
     }
 
     /* Routing 생성 */
-    public RoutingDTO createRouting(String projectId, RoutingDTO dto) {
+    public RoutingDTO createRouting(String projectId, RoutingDTO dto) throws IOException {
         /* 입력 DTO 검증 */
         validateDTO(dto);
 
@@ -129,7 +130,7 @@ public class RoutingService {
             bw.flush();
             bw.close();
         } catch (Exception e) {
-            if (file.delete()) {
+            if (!file.delete()) {
                 throw new CustomException(ErrorCode.FAIL_DELETE_CONF);
             }
             throw new CustomException(ErrorCode.FAIL_CREATE_CONF, "포트포워딩 Conf 파일을 작성하지 못했습니다");
@@ -139,8 +140,20 @@ public class RoutingService {
         String url = "http://nginx:8081/nginx-api/test";
         try {
             restTemplate.getForEntity(url, String.class);
-        } catch (Exception e) {
-            if (file.delete()) {
+
+        } catch (HttpClientErrorException | HttpServerErrorException e) {
+            String responseBody = e.getResponseBodyAsString();
+            System.err.println("Response Body: " + responseBody);
+
+            Path filePath = Paths.get(confPath);
+            List<String> lines = Files.readAllLines(filePath);
+
+            // 파일 내용 출력
+            for (String line : lines) {
+                System.out.println(line);
+            }
+
+            if (!file.delete()) {
                 throw new CustomException(ErrorCode.FAIL_NGINX_CONF_TEST, "(롤백 실패)");
             }
             throw new CustomException(ErrorCode.FAIL_NGINX_CONF_TEST);
@@ -151,8 +164,8 @@ public class RoutingService {
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (Exception e) {
-            if (file.delete()) {
-                throw new CustomException(ErrorCode.FAIL_NGINX_CONF_TEST, "(롤백 실패)");
+            if (!file.delete()) {
+                throw new CustomException(ErrorCode.FAIL_NGINX_CONF_RELOAD, "(롤백 실패)");
             }
             throw new CustomException(ErrorCode.FAIL_NGINX_CONF_RELOAD);
         }

@@ -19,11 +19,11 @@ public class RoutingTemplate {
                 + "listen 80;\n"
                 + "listen [::]:80;\n"
                 + (dto.getCertificateId() == -1 ? "" :
-                "listen 443 ssl;\n listen [::]:443 ssl;\n")
+                "listen 443 ssl;\nlisten [::]:443 ssl;\n")
                 + "server_name " + dto.getDomain() + ";\n"
                 + (dto.getCertificateId() == -1 ? "" :
                 optionTemplate.getSSL(certificateDomain))
-                + (dto.getCaching() ? "" :
+                + (!dto.getCaching() ? "" :
                 optionTemplate.getAssetCaching()
         )
                 + "proxy_set_header Upgrade $http_upgrade;\n"
