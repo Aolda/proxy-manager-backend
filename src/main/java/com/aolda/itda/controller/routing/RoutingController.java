@@ -40,7 +40,7 @@ public class RoutingController {
     @PatchMapping("/routing")
     public ResponseEntity<Object> edit(@RequestParam Long routingId,
                                        @RequestBody RoutingDTO dto,
-                                       HttpServletRequest request) {
+                                       HttpServletRequest request) throws IOException {
         routingService.editRouting(routingId, dto, (List<String>) request.getAttribute("projects"));
         return ResponseEntity.ok().build();
     }

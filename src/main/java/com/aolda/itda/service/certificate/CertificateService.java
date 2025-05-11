@@ -125,7 +125,7 @@ public class CertificateService {
     public void renewExpiringCertificates() {
         LocalDateTime threshold = LocalDateTime.now().plusDays(30);
         List<Certificate> expiring = certificateRepository
-                .findByExpiredAtBeforeAndIsDeleted(threshold, false);
+                .findByExpiresAtBeforeAndIsDeleted(threshold, false);
 
         for (Certificate cert : expiring) {
             try {

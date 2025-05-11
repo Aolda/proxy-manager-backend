@@ -69,7 +69,6 @@ public class Routing extends BaseTimeEntity {
         this.domain = dto.getDomain() != null ? dto.getDomain() : this.domain;
         this.certificate = certificate;
     }
-
     public void delete() {
         this.isDeleted = true;
     }

@@ -14,4 +14,15 @@ public class ApiExceptionHandler {
         log.error("[handleCustomException] {} : {}, {}", e.getErrorCode().name(), e.getErrorCode().getMessage(), e.getStackTrace());
         return ErrorResponse.fromException(e);
     }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleException(Exception e) {
+        log.error("Unexpected error occurred: {}", e.getMessage(), e);
+        ErrorResponse response = new ErrorResponse(
+                ErrorCode.INTERNAL_SERVER_ERROR.getStatus(),
+                ErrorCode.INTERNAL_SERVER_ERROR.getCode(),
+                ErrorCode.INTERNAL_SERVER_ERROR.getMessage()
+        );
+        return new ResponseEntity<>(response, ErrorCode.INTERNAL_SERVER_ERROR.getStatus());
+    }
 }

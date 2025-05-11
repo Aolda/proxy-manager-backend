@@ -43,8 +43,15 @@ public enum ErrorCode {
     FAIL_DELETE_CONF(HttpStatus.BAD_REQUEST, "Conf 파일을 삭제하지 못했습니다"),
     FAIL_ROLL_BACK(HttpStatus.BAD_REQUEST, "롤백 실패"),
 
-    FAIL_CREATE_CERT(HttpStatus.BAD_REQUEST, "인증서 생성에 실패했습니다");
+    FAIL_CREATE_CERT(HttpStatus.BAD_REQUEST, "인증서 생성에 실패했습니다"),
+
+    // System
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다");
 
     private final HttpStatus status;
     private final String message;
+
+    public String getCode() {
+        return this.name();
+    }
 }

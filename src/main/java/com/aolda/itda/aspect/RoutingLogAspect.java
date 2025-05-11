@@ -141,19 +141,14 @@ public class RoutingLogAspect {
                 + "domain: " + old.getDomain() + (old.getDomain().equals(newObj.getDomain()) ? "" : " -> " + newObj.getDomain()) + "\n"
                 + "ip: " + old.getInstanceIp() + (old.getInstanceIp().equals(newObj.getInstanceIp()) ? "" : " -> " + newObj.getInstanceIp()) + "\n"
                 + "port: " + old.getInstancePort() + (old.getInstancePort().equals(newObj.getInstancePort()) ? "" : " -> " + newObj.getInstancePort()) + "\n";
-        if (old.getCertificate() == null) {
-            if (newObj.getCertificate() != null) {
-                description = description + "certificateId: null -> " + newObj.getCertificate().getCertificateId() + "\n";
-            }
+
+        if (isSameCertificate(old, newObj)) {
+            description = description + "certificateId: " + (old.getCertificate() == null ? "null" : old.getCertificate().getCertificateId()) + "\n";
+        } else {
+            description = description + "certificateId: " + (old.getCertificate() == null ? "null" : old.getCertificate().getCertificateId()) +
+                    (newObj.getCertificate() == null ? "null" : " -> " + newObj.getCertificate().getCertificateId()) + "\n";
         }
-        else {
-            if (newObj.getCertificate() == null) {
-                description = description + "certificateId: " + old.getCertificate().getCertificateId() + " -> null\n";
-            }
-            else {
-                description = description + "certificateId: " + old.getCertificate().getCertificateId() + " -> " + newObj.getCertificate().getCertificateId() + "\n";
-            }
-        }
+
         description = description + "caching: " + (old.getCaching() == newObj.getCaching() ? newObj.getCaching() : (" -> " + newObj.getCaching()));
 
         /* 로그 엔티티 저장 */
@@ -166,5 +161,15 @@ public class RoutingLogAspect {
                 .description(description)
                 .build());
         return result;
+    }
+
+    private boolean isSameCertificate(Routing old, Routing newObj) {
+        if (old.getCertificate() == null && newObj.getCertificate() == null) {
+            return true;
+        } else if (old.getCertificate() == null || newObj.getCertificate() == null) {
+            return false;
+        } else {
+            return old.getCertificate().getCertificateId().equals(newObj.getCertificate().getCertificateId());
+        }
     }
 }

@@ -2,6 +2,7 @@ package com.aolda.itda.entity.certificate;
 
 import com.aolda.itda.entity.BaseTimeEntity;
 import com.aolda.itda.entity.user.User;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -32,9 +33,8 @@ public class Certificate extends BaseTimeEntity {
     private String email;
 
     @Setter
+    @Column(columnDefinition = "DATETIME")
     private LocalDateTime expiresAt; //인증서 만료일
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 
     @Enumerated(EnumType.STRING)
     private Challenge challenge;

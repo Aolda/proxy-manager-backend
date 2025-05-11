@@ -174,7 +174,7 @@ public class RoutingService {
     }
 
     /* Routing 수정 */
-    public void editRouting(Long routingId, RoutingDTO dto, List<String> projects) {
+    public void editRouting(Long routingId, RoutingDTO dto, List<String> projects) throws IOException {
         Routing routing = routingRepository.findByRoutingIdAndIsDeleted(routingId, false)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_ROUTING));
 
@@ -187,9 +187,16 @@ public class RoutingService {
         }
 
         /* SSL 인증서 조회 */
-        Certificate certificate = (dto.getCertificateId() == null) || (dto.getCertificateId() == -1 ) ? null :
-                certificateRepository.findById(dto.getCertificateId())
-                        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CERTIFICATE)); // isDeleted 확인 필요
+        Certificate certificate;
+        if (dto.getCertificateId() == null) {
+            certificate = routing.getCertificate();
+        }
+        else if (dto.getCertificateId() == -1) {
+            certificate = null;
+        } else {
+            certificate = certificateRepository.findById(dto.getCertificateId())
+                    .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CERTIFICATE)); // isDeleted 확인 필요
+        }
 
         /* 파일 수정 */
         routing.edit(dto, certificate);
@@ -220,7 +227,17 @@ public class RoutingService {
         String url = "http://nginx:8081/nginx-api/test";
         try {
             restTemplate.getForEntity(url, String.class);
-        } catch (RuntimeException e) {
+        } catch (HttpClientErrorException | HttpServerErrorException e) {
+            String responseBody = e.getResponseBodyAsString();
+            System.err.println("Response Body: " + responseBody);
+
+            Path filePath = Paths.get(confPath);
+            List<String> lines = Files.readAllLines(filePath);
+
+            // 파일 내용 출력
+            for (String line : lines) {
+                System.out.println(line);
+            }
             try {
                 Files.copy(backup, Paths.get(confPath), StandardCopyOption.REPLACE_EXISTING
                         , StandardCopyOption.COPY_ATTRIBUTES);
