@@ -1,7 +1,9 @@
 package com.aolda.itda.repository.certificate;
 
 import com.aolda.itda.entity.certificate.Certificate;
+import com.aolda.itda.entity.routing.Routing;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,10 +21,13 @@ public interface CertificateRepository extends JpaRepository<Certificate, Long> 
     //List<Certificate> findByExpiresAtBeforeAndIsDeleted(LocalDateTime date, Boolean isDeleted);
 
     // 1) domain 필터링용 메서드
-    List<Certificate> findByProjectIdAndDomainContainingIgnoreCaseAndIsDeleted(
+    List<Certificate> findByProjectIdAndDomainContainingAndIsDeleted(
             String projectId, String domain, Boolean isDeleted);
 
     // 3) 만료 30일 이내 대상 조회
     List<Certificate> findByExpiresAtBeforeAndIsDeleted(
             LocalDateTime date, Boolean isDeleted);
+
+    @Query("SELECT r FROM Routing r WHERE r.projectId = ?1 AND r.isDeleted = ?3 AND (r.domain LIKE %?2% OR r.instanceIp LIKE %?2% OR r.name LIKE %?2%)")
+    List<Certificate> findWithSearch(String projectId, String query, Boolean isDeleted);
 }

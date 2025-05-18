@@ -34,6 +34,7 @@ public class Certificate extends BaseTimeEntity {
 
     @Setter
     @Column(columnDefinition = "DATETIME")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Seoul")
     private LocalDateTime expiresAt; //인증서 만료일
 
     @Enumerated(EnumType.STRING)

@@ -2,8 +2,10 @@ package com.aolda.itda.service.certificate;
 
 import com.aolda.itda.dto.PageResp;
 import com.aolda.itda.dto.certificate.CertificateDTO;
+import com.aolda.itda.dto.routing.RoutingDTO;
 import com.aolda.itda.entity.certificate.Certificate;
 import com.aolda.itda.entity.certificate.Challenge;
+import com.aolda.itda.entity.routing.Routing;
 import com.aolda.itda.exception.CustomException;
 import com.aolda.itda.exception.ErrorCode;
 import com.aolda.itda.repository.certificate.CertificateRepository;
@@ -12,6 +14,7 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +24,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 @Service
 @Transactional
@@ -29,6 +35,8 @@ import java.util.List;
 @Slf4j
 public class CertificateService {
 
+    @Value("${spring.server.admin-project}")
+    private String adminProject;
     private final CertificateRepository certificateRepository;
     private final AuthService authService;
 
@@ -41,18 +49,67 @@ public class CertificateService {
         return toDTO(cert);
     }
 
+    /* Certificate 목록 조회 + 검색 */
+    public PageResp<CertificateDTO> getCertificatesWithSearch(String projectId, String query) {
+
+        /* 입력 검증 */
+        if (query == null || query.isBlank()) {
+            return PageResp.<CertificateDTO>builder()
+                    .contents(certificateRepository.findByProjectIdAndIsDeleted(projectId, false)
+                            .stream()
+                            .map(this::toDTO)
+                            .toList()).build();
+        }
+
+        /* 도메인 패턴 검증 */
+        String domainPattern = "^(\\*\\.)?([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}$";
+        if (Pattern.matches(domainPattern, query) && query.startsWith("*.")) {
+            query = query.substring(2);
+        }
+
+        return PageResp.<CertificateDTO>builder()
+                .contents(certificateRepository.findWithSearch(projectId, query, false)
+                        .stream()
+                        .map(this::toDTO)
+                        .toList()).build();
+    }
+
     /** 1) 목록 조회 (domain 필터 optional) **/
     public PageResp<CertificateDTO> getCertificates(String projectId, String domain) {
-        List<Certificate> list;
+        Set<Certificate> set = new HashSet<>();
+        // 도메인이 입력된 경우 처리
         if (domain != null && !domain.isBlank()) {
-            list = certificateRepository
-                    .findByProjectIdAndDomainContainingIgnoreCaseAndIsDeleted(
-                            projectId, domain, false);
+            // 서브도메인이 있는 경우 
+            if (domain.indexOf('.') != domain.lastIndexOf('.')) {
+                String wildcardDomain = "*." + domain.substring(domain.indexOf('.') + 1);
+                set.addAll(certificateRepository
+                        .findByProjectIdAndDomainContainingAndIsDeleted(
+                                projectId, wildcardDomain, false));
+                set.addAll(certificateRepository
+                        .findByProjectIdAndDomainContainingAndIsDeleted(
+                                projectId, domain, false));
+                set.addAll(certificateRepository
+                        .findByProjectIdAndDomainContainingAndIsDeleted(
+                                adminProject, wildcardDomain, false));
+                set.addAll(certificateRepository
+                        .findByProjectIdAndDomainContainingAndIsDeleted(
+                                adminProject, domain, false));
+            } else {
+                // 서브도메인이 없는 경우 일반 검색
+                set.addAll(certificateRepository
+                        .findByProjectIdAndDomainContainingAndIsDeleted(
+                                projectId, domain, false));
+                set.addAll(certificateRepository
+                        .findByProjectIdAndDomainContainingAndIsDeleted(
+                                adminProject, domain, false));
+            }
         } else {
-            list = certificateRepository
-                    .findByProjectIdAndIsDeleted(projectId, false);
+            set.addAll(certificateRepository
+                    .findByProjectIdAndIsDeleted(projectId, false));
+            set.addAll(certificateRepository
+                    .findByProjectIdAndIsDeleted(adminProject, false));
         }
-        List<CertificateDTO> dtos = list.stream()
+        List<CertificateDTO> dtos = set.stream()
                 .map(this::toDTO)
                 .toList();
         return PageResp.<CertificateDTO>builder()
@@ -171,6 +228,7 @@ public class CertificateService {
                 .updatedAt(cert.getUpdatedAt())
                 .isDeleted(cert.getIsDeleted())
                 .apiToken(cert.getApiToken())
+                .projectId(cert.getProjectId())
                 .build();
     }
 

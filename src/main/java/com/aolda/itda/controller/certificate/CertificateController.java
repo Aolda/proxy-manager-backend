@@ -59,8 +59,18 @@ public class CertificateController {
     @GetMapping("/certificates")
     public ResponseEntity<PageResp<CertificateDTO>> lists(
             @RequestParam String projectId,
-            @RequestParam(required = false) String domain
+            @RequestParam(required = false) String domain,
+            @RequestParam(required = false) String query
     ) {
+
+        if (query != null) {
+            return ResponseEntity.ok(
+                    certificateService.getCertificatesWithSearch(
+                            projectId,
+                            query
+                    )
+            );
+        }
         return ResponseEntity.ok(
                 certificateService.getCertificates(projectId, domain)
         );

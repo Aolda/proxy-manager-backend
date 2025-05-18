@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Objects;
 
@@ -35,6 +36,8 @@ public class CertificateLogAspect {
     private final UserRepository userRepository;
     private final LogRepository logRepository;
     private final EntityManager entityManager;
+
+    private static final DateTimeFormatter LOG_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /* Create 로깅 */
     @AfterReturning(pointcut = "execution(* com.aolda.itda.service.certificate.*Service.*create*(..))"
@@ -55,7 +58,7 @@ public class CertificateLogAspect {
         String description = "domain: " + certificate.getDomain() + "\n"
                 + "email: " + certificate.getEmail() + "\n"
                 + "challenge: " + certificate.getChallenge() + "\n"
-                + "expiresAt: " + certificate.getExpiresAt();
+                + "expiresAt: " + (certificate.getExpiresAt() != null ? certificate.getExpiresAt().format(LOG_DATE_FORMATTER) : "null");
 
         /* 로그 엔티티 저장 */
         logRepository.save(Log.builder()
@@ -89,7 +92,7 @@ public class CertificateLogAspect {
         String description = "domain: " + certificate.getDomain() + "\n"
                 + "email: " + certificate.getEmail() + "\n"
                 + "challenge: " + certificate.getChallenge() + "\n"
-                + "expiresAt: " + certificate.getExpiresAt();
+                + "expiresAt: " + (certificate.getExpiresAt() != null ? certificate.getExpiresAt().format(LOG_DATE_FORMATTER) : "null");
 
         /* 로그 엔티티 저장 */
         logRepository.save(Log.builder()
@@ -132,7 +135,8 @@ public class CertificateLogAspect {
         String description = "domain: " + old.getDomain() + (old.getDomain().equals(newObj.getDomain()) ? "" : " -> " + newObj.getDomain()) + "\n"
                 + "email: " + old.getEmail() + (old.getEmail().equals(newObj.getEmail()) ? "" : " -> " + newObj.getEmail()) + "\n"
                 + "challenge: " + old.getChallenge() + (old.getChallenge() == newObj.getChallenge() ? "" : " -> " + newObj.getChallenge()) + "\n"
-                + "expiresAt: " + old.getExpiresAt() + (old.getExpiresAt().equals(newObj.getExpiresAt()) ? "" : " -> " + newObj.getExpiresAt());
+                + "expiresAt: " + (old.getExpiresAt() != null ? old.getExpiresAt().format(LOG_DATE_FORMATTER) : "null")
+                + (old.getExpiresAt() != null && newObj.getExpiresAt() != null && !old.getExpiresAt().equals(newObj.getExpiresAt()) ? " -> " + newObj.getExpiresAt().format(LOG_DATE_FORMATTER) : "");
 
         /* 로그 엔티티 저장 */
         logRepository.save(Log.builder()

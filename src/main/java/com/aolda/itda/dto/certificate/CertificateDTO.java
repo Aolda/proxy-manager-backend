@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 public class CertificateDTO {
 
     private Long id;          // 인증서 고유 ID
-//    private String projectId;            // 프로젝트 식별자
+    private String projectId;            // 프로젝트 식별자
     private String domain;               // SSL 인증받을 도메인 주소
     private String email;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Seoul")// 도메인 소유자의 이메일
