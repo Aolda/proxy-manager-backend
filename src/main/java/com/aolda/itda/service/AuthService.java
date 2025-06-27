@@ -27,10 +27,6 @@ public class AuthService {
 
     @Value("${spring.server.keystone}")
     private String keystone;
-    @Value("${spring.server.admin-id}")
-    private String adminId;
-    @Value("${spring.server.admin-password}")
-    private String adminPassword;
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final UserRepository userRepository;
@@ -242,12 +238,6 @@ public class AuthService {
         }
 
         return Map.of("role", bestRole);
-    }
-
-    // 관리자용 토큰 발행
-    public String getAdminToken() {
-        Map<String, String> user = getToken(adminId, adminPassword);
-        return user.get("token");
     }
 
     // 특정 사용자의 참여 프로젝트 반환

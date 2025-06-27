@@ -3,23 +3,29 @@ package com.aolda.itda.service.main;
 import com.aolda.itda.dto.PageResp;
 import com.aolda.itda.dto.auth.IdAndNameDTO;
 import com.aolda.itda.dto.main.MainInfoDTO;
+import com.aolda.itda.entity.certificate.Certificate;
 import com.aolda.itda.repository.certificate.CertificateRepository;
 import com.aolda.itda.repository.forwarding.ForwardingRepository;
 import com.aolda.itda.repository.routing.RoutingRepository;
 import com.aolda.itda.service.AuthService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
 public class MainService {
 
+    @Value("${spring.server.admin-project}")
+    private String adminProject;
     private final AuthService authService;
     private final RoutingRepository routingRepository;
     private final ForwardingRepository forwardingRepository;
@@ -34,7 +40,9 @@ public class MainService {
         /* 카운팅 */
         Long routing = (long) routingRepository.findByProjectIdAndIsDeleted(projectId, false).size();
         Long forwarding = (long) forwardingRepository.findByProjectIdAndIsDeleted(projectId, false).size();
-        Long certificate = 0L;
+        Set<Certificate> set = new HashSet<>(certificateRepository.findByProjectIdAndIsDeleted(projectId, false));
+        set.addAll(certificateRepository.findByProjectIdAndIsDeleted(adminProject, false));
+        Long certificate = (long) set.size();
 
         return MainInfoDTO.builder()
                 .routing(routing)
