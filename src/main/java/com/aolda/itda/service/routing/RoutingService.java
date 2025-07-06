@@ -137,7 +137,7 @@ public class RoutingService {
         }
 
         /* nginx test */
-        String url = "http://nginx:8081/nginx-api/test";
+        String url = "http://localhost:8081/nginx-api/test";
         try {
             restTemplate.getForEntity(url, String.class);
 
@@ -160,7 +160,7 @@ public class RoutingService {
         }
 
         /* nginx reload */
-        url = "http://nginx:8081/nginx-api/reload";
+        url = "http://localhost:8081/nginx-api/reload";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (Exception e) {
@@ -185,6 +185,9 @@ public class RoutingService {
         if (dto.getDomain() != null && routingRepository.existsByDomainAndIsDeleted(dto.getDomain(), false)) {
             throw new CustomException(ErrorCode.DUPLICATED_DOMAIN_NAME);
         }
+
+        if ((dto.getIp() != null) && !dto.getIp().startsWith("10.16."))
+            throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "허용되지 않은 IP대역입니다");
 
         /* SSL 인증서 조회 */
         Certificate certificate;
@@ -224,7 +227,7 @@ public class RoutingService {
         }
 
         /* nginx test */
-        String url = "http://nginx:8081/nginx-api/test";
+        String url = "http://localhost:8081/nginx-api/test";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (HttpClientErrorException | HttpServerErrorException e) {
@@ -249,7 +252,7 @@ public class RoutingService {
         }
 
         /* nginx reload */
-        url = "http://nginx:8081/nginx-api/reload";
+        url = "http://localhost:8081/nginx-api/reload";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (RuntimeException e) {
@@ -285,7 +288,7 @@ public class RoutingService {
         }
 
         /* nginx test */
-        String url = "http://nginx:8081/nginx-api/test";
+        String url = "http://localhost:8081/nginx-api/test";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (Exception e) {
@@ -298,7 +301,7 @@ public class RoutingService {
         }
 
         /* nginx reload */
-        url = "http://nginx:8081/nginx-api/reload";
+        url = "http://localhost:8081/nginx-api/reload";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (Exception e) {
@@ -320,6 +323,9 @@ public class RoutingService {
         for (ConstraintViolation<RoutingDTO> violation : Validation.buildDefaultValidatorFactory().getValidator().validate(dto)) {
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, violation.getMessage());
         }
+
+        if (!dto.getIp().startsWith("10.16."))
+            throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "허용되지 않은 IP대역입니다");
 
     }
 }

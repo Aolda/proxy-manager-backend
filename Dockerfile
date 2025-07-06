@@ -19,5 +19,5 @@ RUN chmod +x /usr/local/bin/lego
 WORKDIR /app
 COPY --from=build /home/gradle/project/build/libs/*.jar app.jar
 
-EXPOSE 8080
+EXPOSE 8888
 ENTRYPOINT ["java", "-jar", "app.jar"]
