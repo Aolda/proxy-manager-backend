@@ -14,6 +14,7 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
@@ -37,6 +38,8 @@ import java.util.regex.Pattern;
 @Slf4j
 public class RoutingService {
 
+    @Value("${nginx.server.address}")
+    private String nginxAddress;
     private final RoutingRepository routingRepository;
     private final CertificateRepository certificateRepository;
     private final AuthService authService;
@@ -137,7 +140,7 @@ public class RoutingService {
         }
 
         /* nginx test */
-        String url = "http://localhost:8081/nginx-api/test";
+        String url = "http://" + nginxAddress + ":8081/nginx-api/test";
         try {
             restTemplate.getForEntity(url, String.class);
 
@@ -160,7 +163,7 @@ public class RoutingService {
         }
 
         /* nginx reload */
-        url = "http://localhost:8081/nginx-api/reload";
+        url = "http://" + nginxAddress + ":8081/nginx-api/reload";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (Exception e) {
@@ -227,7 +230,7 @@ public class RoutingService {
         }
 
         /* nginx test */
-        String url = "http://localhost:8081/nginx-api/test";
+        String url = "http://" + nginxAddress + ":8081/nginx-api/test";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (HttpClientErrorException | HttpServerErrorException e) {
@@ -252,7 +255,7 @@ public class RoutingService {
         }
 
         /* nginx reload */
-        url = "http://localhost:8081/nginx-api/reload";
+        url = "http://" + nginxAddress + ":8081/nginx-api/reload";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (RuntimeException e) {
@@ -288,7 +291,7 @@ public class RoutingService {
         }
 
         /* nginx test */
-        String url = "http://localhost:8081/nginx-api/test";
+        String url = "http://" + nginxAddress + ":8081/nginx-api/test";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (Exception e) {
@@ -301,7 +304,7 @@ public class RoutingService {
         }
 
         /* nginx reload */
-        url = "http://localhost:8081/nginx-api/reload";
+        url = "http://" + nginxAddress + ":8081/nginx-api/reload";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (Exception e) {

@@ -37,6 +37,8 @@ public class ForwardingService {
 
     @Value("${spring.server.base-ip}")
     private String serverBaseIp;
+    @Value("${nginx.server.address}")
+    private String nginxAddress;
     private final ForwardingTemplate forwardingTemplate;
     private final ForwardingRepository forwardingRepository;
     private final AuthService authService;
@@ -129,7 +131,7 @@ public class ForwardingService {
         }
 
         /* nginx test */
-        String url = "http://localhost:8081/nginx-api/test";
+        String url = "http://" + nginxAddress + ":8081/nginx-api/test";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (HttpServerErrorException.InternalServerError e) {
@@ -146,7 +148,7 @@ public class ForwardingService {
         }
 
         /* nginx reload */
-        url = "http://localhost:8081/nginx-api/reload";
+        url = "http://" + nginxAddress + ":8081/nginx-api/reload";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (HttpServerErrorException.InternalServerError e) {
@@ -216,7 +218,7 @@ public class ForwardingService {
         }
 
         /* nginx test */
-        String url = "http://localhost:8081/nginx-api/test";
+        String url = "http://" + nginxAddress + ":8081/nginx-api/test";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (RuntimeException e) {
@@ -232,7 +234,7 @@ public class ForwardingService {
         }
 
         /* nginx reload */
-        url = "http://localhost:8081/nginx-api/reload";
+        url = "http://" + nginxAddress + ":8081/nginx-api/reload";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (RuntimeException e) {
@@ -268,7 +270,7 @@ public class ForwardingService {
         }
 
         /* nginx test */
-        String url = "http://localhost:8081/nginx-api/test";
+        String url = "http://" + nginxAddress + ":8081/nginx-api/test";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (Exception e) {
@@ -281,7 +283,7 @@ public class ForwardingService {
         }
 
         /* nginx reload */
-        url = "http://localhost:8081/nginx-api/reload";
+        url = "http://" + nginxAddress + ":8081/nginx-api/reload";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (Exception e) {
@@ -305,7 +307,6 @@ public class ForwardingService {
         for (ConstraintViolation<ForwardingDTO> violation : Validation.buildDefaultValidatorFactory().getValidator().validate(dto)) {
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, violation.getMessage());
         }
-
         if (!dto.getInstanceIp().startsWith("10.16."))
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "허용되지 않은 IP대역입니다");
 
