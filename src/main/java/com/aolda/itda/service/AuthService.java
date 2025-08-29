@@ -18,6 +18,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import jakarta.annotation.PostConstruct;
 
 import java.util.*;
 
@@ -27,6 +28,9 @@ public class AuthService {
 
     @Value("${spring.server.keystone}")
     private String keystone;
+    @Value("${spring.server.admin-list}")
+    private String adminList;
+    private String[] admins;
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final UserRepository userRepository;
@@ -337,5 +341,13 @@ public class AuthService {
         }
         return false;
 
+    }
+    public Boolean isAdmin(String userId) {
+        return adminList.contains(userId);
+    }
+
+    @PostConstruct
+    public void init() {
+        admins = adminList.split(",");
     }
 }

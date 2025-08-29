@@ -75,10 +75,10 @@ public class ForwardingService {
     }
 
     /* 포트포워딩 생성 */
-    public ForwardingDTO createForwarding(String projectId, ForwardingDTO dto) {
+    public ForwardingDTO createForwarding(String projectId, ForwardingDTO dto, String userID) {
 
         /* 입력 DTO 검증 */
-        validateDTO(dto);
+        validateDTO(dto, userID);
 
         /* 중복 검증 */
         if (forwardingRepository.existsByInstanceIpAndInstancePortAndIsDeleted(dto.getInstanceIp(), dto.getInstancePort(), false)) {
@@ -167,7 +167,7 @@ public class ForwardingService {
     }
 
     /* 포트포워딩 정보 수정 */
-    public void editForwarding(Long forwardingId, ForwardingDTO dto, List<String> projects) {
+    public void editForwarding(Long forwardingId, ForwardingDTO dto, List<String> projects, String userID) {
         Forwarding forwarding = forwardingRepository.findByForwardingIdAndIsDeleted(forwardingId, false)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FORWARDING));
 
@@ -188,7 +188,8 @@ public class ForwardingService {
             throw new CustomException(ErrorCode.DUPLICATED_INSTANCE_INFO);
         }
 
-        if (!(dto.getInstanceIp() == null) && !dto.getInstanceIp().startsWith("10.16."))
+        if (!(dto.getInstanceIp() == null) && !dto.getInstanceIp().startsWith("10.16.")
+        && !(dto.getInstanceIp().startsWith("172.16.") && authService.isAdmin(userID)))
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "허용되지 않은 IP대역입니다");
 
         /* 파일 수정 */
@@ -302,12 +303,12 @@ public class ForwardingService {
     }
 
     /* 입력 DTO 검증 */
-    private void validateDTO(ForwardingDTO dto) {
+    private void validateDTO(ForwardingDTO dto, String userID) {
 
         for (ConstraintViolation<ForwardingDTO> violation : Validation.buildDefaultValidatorFactory().getValidator().validate(dto)) {
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, violation.getMessage());
         }
-        if (!dto.getInstanceIp().startsWith("10.16."))
+        if (!dto.getInstanceIp().startsWith("10.16.") && !(dto.getInstanceIp().startsWith("172.16.") && authService.isAdmin(userID)))
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "허용되지 않은 IP대역입니다");
 
     }

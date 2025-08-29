@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -19,8 +20,9 @@ public class ForwardingController {
 
     @PostMapping("/forwarding")
     public ResponseEntity<Object> create(@RequestParam String projectId,
-                                         @RequestBody ForwardingDTO dto) {
-        forwardingService.createForwarding(projectId, dto);
+                                         @RequestBody ForwardingDTO dto,
+                                         HttpServletRequest request) {
+        forwardingService.createForwarding(projectId, dto, (String) ((Map) request.getAttribute("user")).get("id"));
         return ResponseEntity.ok().build();
     }
 
@@ -39,7 +41,8 @@ public class ForwardingController {
     public ResponseEntity<Object> edit(@RequestParam Long forwardingId,
                                          @RequestBody ForwardingDTO dto,
                                        HttpServletRequest request) {
-        forwardingService.editForwarding(forwardingId, dto, (List<String>) request.getAttribute("projects") );
+        forwardingService.editForwarding(forwardingId, dto, (List<String>) request.getAttribute("projects"),
+                (String) ((Map) request.getAttribute("user")).get("id"));
         return ResponseEntity.ok().build();
     }
 

@@ -83,9 +83,9 @@ public class RoutingService {
     }
 
     /* Routing 생성 */
-    public RoutingDTO createRouting(String projectId, RoutingDTO dto) throws IOException {
+    public RoutingDTO createRouting(String projectId, RoutingDTO dto, String userID) throws IOException {
         /* 입력 DTO 검증 */
-        validateDTO(dto);
+        validateDTO(dto, userID);
 
         /* 중복 검증 */
         if (routingRepository.existsByDomainAndIsDeleted(dto.getDomain(), false)) {
@@ -177,7 +177,7 @@ public class RoutingService {
     }
 
     /* Routing 수정 */
-    public void editRouting(Long routingId, RoutingDTO dto, List<String> projects) throws IOException {
+    public void editRouting(Long routingId, RoutingDTO dto, List<String> projects, String userID) throws IOException {
         Routing routing = routingRepository.findByRoutingIdAndIsDeleted(routingId, false)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_ROUTING));
 
@@ -189,7 +189,8 @@ public class RoutingService {
             throw new CustomException(ErrorCode.DUPLICATED_DOMAIN_NAME);
         }
 
-        if ((dto.getIp() != null) && !dto.getIp().startsWith("10.16."))
+        if ((dto.getIp() != null) && !dto.getIp().startsWith("10.16.")
+                && !(dto.getIp().startsWith("172.16.") && authService.isAdmin(userID)))
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "허용되지 않은 IP대역입니다");
 
         /* SSL 인증서 조회 */
@@ -321,13 +322,13 @@ public class RoutingService {
         routingRepository.save(routing);
     }
 
-    private void validateDTO(RoutingDTO dto) {
+    private void validateDTO(RoutingDTO dto, String userID) {
 
         for (ConstraintViolation<RoutingDTO> violation : Validation.buildDefaultValidatorFactory().getValidator().validate(dto)) {
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, violation.getMessage());
         }
 
-        if (!dto.getIp().startsWith("10.16."))
+        if (!dto.getIp().startsWith("10.16.") && !(dto.getIp().startsWith("172.16.") && authService.isAdmin(userID)))
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "허용되지 않은 IP대역입니다");
 
     }
