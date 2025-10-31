@@ -318,7 +318,7 @@ public class ForwardingService {
     }
 
     private int createPort() {
-        List<Integer> usedPorts = forwardingRepository.findAllUsedServerPortsByProjectIdAndIsDeleted(false);
+        List<Integer> usedPorts = forwardingRepository.findAllUsedServerPortsByIsDeleted(false);
         List<Integer> availablePorts = new ArrayList<>();
 
         for (int port = 20000; port <= 29999; port++) {
