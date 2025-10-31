@@ -24,9 +24,6 @@ public class ForwardingDTO {
             message = "잘못된 IP 형식 (server)")
     private String serverIp;
 
-    @NotBlank(message = "serverPort 값이 존재하지 않습니다")
-    @Pattern(regexp = "^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
-            message = "잘못된 포트 형식 (server)")
     private String serverPort;
 
     @NotBlank(message = "instanceIp 값이 존재하지 않습니다")

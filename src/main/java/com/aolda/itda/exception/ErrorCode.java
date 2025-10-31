@@ -18,6 +18,7 @@ public enum ErrorCode {
 
     // Forwarding
     NOT_FOUND_FORWARDING(HttpStatus.BAD_REQUEST, "포트포워딩 파일이 존재하지 않습니다"),
+    FAIL_CREATE_FORWARDING(HttpStatus.INTERNAL_SERVER_ERROR, "포트포워딩 생성에 실패했습니다"),
 
     // Routing
     NOT_FOUND_ROUTING(HttpStatus.BAD_REQUEST, "라우팅 파일이 존재하지 않습니다"),

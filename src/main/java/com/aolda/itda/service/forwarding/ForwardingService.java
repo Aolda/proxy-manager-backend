@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -85,7 +86,9 @@ public class ForwardingService {
             throw new CustomException(ErrorCode.DUPLICATED_INSTANCE_INFO);
         }
 
-        if (forwardingRepository.existsByServerPortAndIsDeleted(dto.getServerPort(), false)) {
+        if (authService.isAdmin(userID) &&
+                dto.getServerPort() != null &&
+                forwardingRepository.existsByServerPortAndIsDeleted(dto.getServerPort(), false)) {
             throw new CustomException(ErrorCode.DUPLICATED_SERVER_PORT);
         }
 
@@ -95,7 +98,7 @@ public class ForwardingService {
                 .projectId(projectId)
                 .name(dto.getName())
                 .serverIp(dto.getServerIp() == null ? serverBaseIp : dto.getServerIp())
-                .serverPort(dto.getServerPort())
+                .serverPort(dto.getServerPort() == null ? String.valueOf(createPort()) : dto.getServerPort())
                 .instanceIp(dto.getInstanceIp())
                 .instancePort(dto.getInstancePort())
                 .build();
@@ -175,7 +178,8 @@ public class ForwardingService {
         authService.validateProjectAuth(projects, forwarding.getProjectId());
 
         /* 중복 검증 */
-        if (dto.getServerPort() != null && forwardingRepository.existsByServerPortAndIsDeleted(dto.getServerPort(), false)) {
+        if (dto.getServerPort() != null && forwardingRepository.existsByServerPortAndIsDeleted(dto.getServerPort(), false)
+        && authService.isAdmin(userID)) {
             forwardingRepository.existsByServerPortAndIsDeleted(dto.getServerPort(), false);
             throw new CustomException(ErrorCode.DUPLICATED_SERVER_PORT);
         }
@@ -311,5 +315,22 @@ public class ForwardingService {
         if (!dto.getInstanceIp().startsWith("10.16.") && !(dto.getInstanceIp().startsWith("172.16.") && authService.isAdmin(userID)))
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "허용되지 않은 IP대역입니다");
 
+    }
+
+    private int createPort() {
+        List<Integer> usedPorts = forwardingRepository.findAllUsedServerPortsByProjectIdAndIsDeleted(false);
+        List<Integer> availablePorts = new ArrayList<>();
+
+        for (int port = 20000; port <= 29999; port++) {
+            availablePorts.add(port);
+        }
+        availablePorts.removeAll(usedPorts);
+
+        if (availablePorts.isEmpty()) {
+            throw new CustomException(ErrorCode.FAIL_CREATE_FORWARDING, "사용 가능한 포트가 없습니다");
+        }
+
+        int idx = (int) (Math.random() * availablePorts.size());
+        return availablePorts.get(idx);
     }
 }
