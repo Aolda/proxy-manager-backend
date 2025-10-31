@@ -30,7 +30,6 @@ public class AuthService {
     private String keystone;
     @Value("${spring.server.admin-list}")
     private String adminList;
-    private String[] admins;
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final UserRepository userRepository;
@@ -344,10 +343,5 @@ public class AuthService {
     }
     public Boolean isAdmin(String userId) {
         return adminList.contains(userId);
-    }
-
-    @PostConstruct
-    public void init() {
-        admins = adminList.split(",");
     }
 }
