@@ -93,12 +93,13 @@ public class ForwardingService {
         }
 
         /* 포트포워딩 엔티티 생성 */
+        String serverPort = dto.getServerPort() == null ? String.valueOf(createPort()) : dto.getServerPort();
         Forwarding forwarding = Forwarding.builder()
                 .isDeleted(false)
                 .projectId(projectId)
                 .name(dto.getName())
                 .serverIp(dto.getServerIp() == null ? serverBaseIp : dto.getServerIp())
-                .serverPort(dto.getServerPort() == null ? String.valueOf(createPort()) : dto.getServerPort())
+                .serverPort(serverPort)
                 .instanceIp(dto.getInstanceIp())
                 .instancePort(dto.getInstancePort())
                 .build();
@@ -106,7 +107,7 @@ public class ForwardingService {
         forwardingRepository.save(forwarding);
 
         /* nginx conf 파일 생성 및 예외 처리 */
-        String content = forwardingTemplate.getPortForwardingWithTCP(dto.getServerPort(), dto.getInstanceIp(), dto.getInstancePort(), dto.getName());
+        String content = forwardingTemplate.getPortForwardingWithTCP(serverPort, dto.getInstanceIp(), dto.getInstancePort(), dto.getName());
         String confPath = "/data/nginx/stream/" + forwarding.getForwardingId() + ".conf";
 
         File file = new File(confPath);
