@@ -25,8 +25,8 @@ public class RoutingController {
     public ResponseEntity<Object> create(@RequestParam String projectId,
                                          @RequestBody RoutingDTO dto,
                                          HttpServletRequest request) throws IOException {
-        routingService.createRouting(projectId, dto, (String) ((Map) request.getAttribute("user")).get("id"));
-        return ResponseEntity.ok().build();
+
+        return ResponseEntity.ok(routingService.createRouting(projectId, dto, (String) ((Map) request.getAttribute("user")).get("id")));
     }
 
     @GetMapping("/routing")

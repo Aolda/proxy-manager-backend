@@ -22,8 +22,7 @@ public class ForwardingController {
     public ResponseEntity<Object> create(@RequestParam String projectId,
                                          @RequestBody ForwardingDTO dto,
                                          HttpServletRequest request) {
-        forwardingService.createForwarding(projectId, dto, (String) ((Map) request.getAttribute("user")).get("id"));
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(forwardingService.createForwarding(projectId, dto, (String) ((Map) request.getAttribute("user")).get("id")));
     }
 
     @GetMapping("/forwarding")
