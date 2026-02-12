@@ -194,7 +194,7 @@ public class ForwardingService {
         }
 
         if (!(dto.getInstanceIp() == null) && !dto.getInstanceIp().startsWith("10.16.")
-        && !(dto.getInstanceIp().startsWith("172.16.") && authService.isAdmin(userID)))
+        && !(authService.isAdmin(userID)))
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "허용되지 않은 IP대역입니다");
 
         /* 파일 수정 */
@@ -313,7 +313,7 @@ public class ForwardingService {
         for (ConstraintViolation<ForwardingDTO> violation : Validation.buildDefaultValidatorFactory().getValidator().validate(dto)) {
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, violation.getMessage());
         }
-        if (!dto.getInstanceIp().startsWith("10.16.") && !(dto.getInstanceIp().startsWith("172.16.") && authService.isAdmin(userID)))
+        if (!dto.getInstanceIp().startsWith("10.16.") && !(authService.isAdmin(userID)))
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "허용되지 않은 IP대역입니다");
 
     }

@@ -190,7 +190,7 @@ public class RoutingService {
         }
 
         if ((dto.getIp() != null) && !dto.getIp().startsWith("10.16.")
-                && !(dto.getIp().startsWith("172.16.") && authService.isAdmin(userID)))
+                && !(authService.isAdmin(userID)))
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "허용되지 않은 IP대역입니다");
 
         /* SSL 인증서 조회 */
@@ -328,7 +328,7 @@ public class RoutingService {
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, violation.getMessage());
         }
 
-        if (!dto.getIp().startsWith("10.16.") && !(dto.getIp().startsWith("172.16.") && authService.isAdmin(userID)))
+        if (!dto.getIp().startsWith("10.16.") && !(authService.isAdmin(userID)))
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "허용되지 않은 IP대역입니다");
 
     }
