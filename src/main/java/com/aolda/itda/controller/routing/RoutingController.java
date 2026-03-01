@@ -2,6 +2,7 @@ package com.aolda.itda.controller.routing;
 
 import com.aolda.itda.dto.forwarding.ForwardingDTO;
 import com.aolda.itda.dto.routing.RoutingDTO;
+import com.aolda.itda.service.AuthService;
 import com.aolda.itda.service.routing.RoutingService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -17,12 +19,14 @@ import java.util.List;
 public class RoutingController {
 
     private final RoutingService routingService;
+    private final AuthService authService;
 
     @PostMapping("/routing")
     public ResponseEntity<Object> create(@RequestParam String projectId,
-                                         @RequestBody RoutingDTO dto) throws IOException {
-        routingService.createRouting(projectId, dto);
-        return ResponseEntity.ok().build();
+                                         @RequestBody RoutingDTO dto,
+                                         HttpServletRequest request) throws IOException {
+
+        return ResponseEntity.ok(routingService.createRouting(projectId, dto, (String) ((Map) request.getAttribute("user")).get("id")));
     }
 
     @GetMapping("/routing")
@@ -41,7 +45,8 @@ public class RoutingController {
     public ResponseEntity<Object> edit(@RequestParam Long routingId,
                                        @RequestBody RoutingDTO dto,
                                        HttpServletRequest request) throws IOException {
-        routingService.editRouting(routingId, dto, (List<String>) request.getAttribute("projects"));
+        routingService.editRouting(routingId, dto, (List<String>) request.getAttribute("projects"),
+                (String) ((Map) request.getAttribute("user")).get("id"));
         return ResponseEntity.ok().build();
     }
 

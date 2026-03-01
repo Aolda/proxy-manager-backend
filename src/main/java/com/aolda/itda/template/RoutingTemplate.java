@@ -30,6 +30,8 @@ public class RoutingTemplate {
                 + "proxy_set_header Connection $http_connection;\n"
                 + "proxy_http_version 1.1;\n"
                 + "\n"
+                + optionTemplate.getIncreasingProxyBufferSize()
+                + "\n"
                 + "access_log /data/logs/proxy-host-" + dto.getId() + "_access.log proxy;\n"
                 + "error_log /data/logs/proxy-host-" + dto.getId() + "_error.log warn;\n"
                 + "location / { \n"

@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -37,6 +38,8 @@ public class ForwardingService {
 
     @Value("${spring.server.base-ip}")
     private String serverBaseIp;
+    @Value("${nginx.server.address}")
+    private String nginxAddress;
     private final ForwardingTemplate forwardingTemplate;
     private final ForwardingRepository forwardingRepository;
     private final AuthService authService;
@@ -73,27 +76,30 @@ public class ForwardingService {
     }
 
     /* 포트포워딩 생성 */
-    public ForwardingDTO createForwarding(String projectId, ForwardingDTO dto) {
+    public ForwardingDTO createForwarding(String projectId, ForwardingDTO dto, String userID) {
 
         /* 입력 DTO 검증 */
-        validateDTO(dto);
+        validateDTO(dto, userID);
 
         /* 중복 검증 */
         if (forwardingRepository.existsByInstanceIpAndInstancePortAndIsDeleted(dto.getInstanceIp(), dto.getInstancePort(), false)) {
             throw new CustomException(ErrorCode.DUPLICATED_INSTANCE_INFO);
         }
 
-        if (forwardingRepository.existsByServerPortAndIsDeleted(dto.getServerPort(), false)) {
+        if (authService.isAdmin(userID) &&
+                dto.getServerPort() != null &&
+                forwardingRepository.existsByServerPortAndIsDeleted(dto.getServerPort(), false)) {
             throw new CustomException(ErrorCode.DUPLICATED_SERVER_PORT);
         }
 
         /* 포트포워딩 엔티티 생성 */
+        String serverPort = dto.getServerPort() == null ? String.valueOf(createPort()) : dto.getServerPort();
         Forwarding forwarding = Forwarding.builder()
                 .isDeleted(false)
                 .projectId(projectId)
                 .name(dto.getName())
                 .serverIp(dto.getServerIp() == null ? serverBaseIp : dto.getServerIp())
-                .serverPort(dto.getServerPort())
+                .serverPort(serverPort)
                 .instanceIp(dto.getInstanceIp())
                 .instancePort(dto.getInstancePort())
                 .build();
@@ -101,7 +107,7 @@ public class ForwardingService {
         forwardingRepository.save(forwarding);
 
         /* nginx conf 파일 생성 및 예외 처리 */
-        String content = forwardingTemplate.getPortForwardingWithTCP(dto.getServerPort(), dto.getInstanceIp(), dto.getInstancePort(), dto.getName());
+        String content = forwardingTemplate.getPortForwardingWithTCP(serverPort, dto.getInstanceIp(), dto.getInstancePort(), dto.getName());
         String confPath = "/data/nginx/stream/" + forwarding.getForwardingId() + ".conf";
 
         File file = new File(confPath);
@@ -129,7 +135,7 @@ public class ForwardingService {
         }
 
         /* nginx test */
-        String url = "http://nginx:8081/nginx-api/test";
+        String url = "http://" + nginxAddress + ":8081/nginx-api/test";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (HttpServerErrorException.InternalServerError e) {
@@ -146,7 +152,7 @@ public class ForwardingService {
         }
 
         /* nginx reload */
-        url = "http://nginx:8081/nginx-api/reload";
+        url = "http://" + nginxAddress + ":8081/nginx-api/reload";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (HttpServerErrorException.InternalServerError e) {
@@ -165,7 +171,7 @@ public class ForwardingService {
     }
 
     /* 포트포워딩 정보 수정 */
-    public void editForwarding(Long forwardingId, ForwardingDTO dto, List<String> projects) {
+    public void editForwarding(Long forwardingId, ForwardingDTO dto, List<String> projects, String userID) {
         Forwarding forwarding = forwardingRepository.findByForwardingIdAndIsDeleted(forwardingId, false)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FORWARDING));
 
@@ -173,7 +179,8 @@ public class ForwardingService {
         authService.validateProjectAuth(projects, forwarding.getProjectId());
 
         /* 중복 검증 */
-        if (dto.getServerPort() != null && forwardingRepository.existsByServerPortAndIsDeleted(dto.getServerPort(), false)) {
+        if (dto.getServerPort() != null && forwardingRepository.existsByServerPortAndIsDeleted(dto.getServerPort(), false)
+        && authService.isAdmin(userID)) {
             forwardingRepository.existsByServerPortAndIsDeleted(dto.getServerPort(), false);
             throw new CustomException(ErrorCode.DUPLICATED_SERVER_PORT);
         }
@@ -185,6 +192,10 @@ public class ForwardingService {
                 , false)) {
             throw new CustomException(ErrorCode.DUPLICATED_INSTANCE_INFO);
         }
+
+        if (!(dto.getInstanceIp() == null) && !dto.getInstanceIp().startsWith("10.16.")
+        && !(authService.isAdmin(userID)))
+            throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "허용되지 않은 IP대역입니다");
 
         /* 파일 수정 */
         forwarding.edit(dto);
@@ -213,7 +224,7 @@ public class ForwardingService {
         }
 
         /* nginx test */
-        String url = "http://nginx:8081/nginx-api/test";
+        String url = "http://" + nginxAddress + ":8081/nginx-api/test";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (RuntimeException e) {
@@ -229,7 +240,7 @@ public class ForwardingService {
         }
 
         /* nginx reload */
-        url = "http://nginx:8081/nginx-api/reload";
+        url = "http://" + nginxAddress + ":8081/nginx-api/reload";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (RuntimeException e) {
@@ -265,7 +276,7 @@ public class ForwardingService {
         }
 
         /* nginx test */
-        String url = "http://nginx:8081/nginx-api/test";
+        String url = "http://" + nginxAddress + ":8081/nginx-api/test";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (Exception e) {
@@ -278,7 +289,7 @@ public class ForwardingService {
         }
 
         /* nginx reload */
-        url = "http://nginx:8081/nginx-api/reload";
+        url = "http://" + nginxAddress + ":8081/nginx-api/reload";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (Exception e) {
@@ -297,11 +308,30 @@ public class ForwardingService {
     }
 
     /* 입력 DTO 검증 */
-    private void validateDTO(ForwardingDTO dto) {
+    private void validateDTO(ForwardingDTO dto, String userID) {
 
         for (ConstraintViolation<ForwardingDTO> violation : Validation.buildDefaultValidatorFactory().getValidator().validate(dto)) {
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, violation.getMessage());
         }
+        if (!dto.getInstanceIp().startsWith("10.16.") && !(authService.isAdmin(userID)))
+            throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "허용되지 않은 IP대역입니다");
 
+    }
+
+    private int createPort() {
+        List<Integer> usedPorts = forwardingRepository.findAllUsedServerPortsByIsDeleted(false);
+        List<Integer> availablePorts = new ArrayList<>();
+
+        for (int port = 20000; port <= 29999; port++) {
+            availablePorts.add(port);
+        }
+        availablePorts.removeAll(usedPorts);
+
+        if (availablePorts.isEmpty()) {
+            throw new CustomException(ErrorCode.FAIL_CREATE_FORWARDING, "사용 가능한 포트가 없습니다");
+        }
+
+        int idx = (int) (Math.random() * availablePorts.size());
+        return availablePorts.get(idx);
     }
 }
