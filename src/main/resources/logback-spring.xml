@@ -87,4 +87,7 @@
         <appender-ref ref="CONSOLE"/>
     </logger>
 
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+    </root>
 </configuration>

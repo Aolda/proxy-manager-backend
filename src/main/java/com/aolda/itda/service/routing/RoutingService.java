@@ -14,6 +14,7 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
@@ -37,6 +38,8 @@ import java.util.regex.Pattern;
 @Slf4j
 public class RoutingService {
 
+    @Value("${nginx.server.address}")
+    private String nginxAddress;
     private final RoutingRepository routingRepository;
     private final CertificateRepository certificateRepository;
     private final AuthService authService;
@@ -80,9 +83,9 @@ public class RoutingService {
     }
 
     /* Routing 생성 */
-    public RoutingDTO createRouting(String projectId, RoutingDTO dto) throws IOException {
+    public RoutingDTO createRouting(String projectId, RoutingDTO dto, String userID) throws IOException {
         /* 입력 DTO 검증 */
-        validateDTO(dto);
+        validateDTO(dto, userID);
 
         /* 중복 검증 */
         if (routingRepository.existsByDomainAndIsDeleted(dto.getDomain(), false)) {
@@ -137,7 +140,7 @@ public class RoutingService {
         }
 
         /* nginx test */
-        String url = "http://nginx:8081/nginx-api/test";
+        String url = "http://" + nginxAddress + ":8081/nginx-api/test";
         try {
             restTemplate.getForEntity(url, String.class);
 
@@ -160,7 +163,7 @@ public class RoutingService {
         }
 
         /* nginx reload */
-        url = "http://nginx:8081/nginx-api/reload";
+        url = "http://" + nginxAddress + ":8081/nginx-api/reload";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (Exception e) {
@@ -174,7 +177,7 @@ public class RoutingService {
     }
 
     /* Routing 수정 */
-    public void editRouting(Long routingId, RoutingDTO dto, List<String> projects) throws IOException {
+    public void editRouting(Long routingId, RoutingDTO dto, List<String> projects, String userID) throws IOException {
         Routing routing = routingRepository.findByRoutingIdAndIsDeleted(routingId, false)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_ROUTING));
 
@@ -185,6 +188,10 @@ public class RoutingService {
         if (dto.getDomain() != null && routingRepository.existsByDomainAndIsDeleted(dto.getDomain(), false)) {
             throw new CustomException(ErrorCode.DUPLICATED_DOMAIN_NAME);
         }
+
+        if ((dto.getIp() != null) && !dto.getIp().startsWith("10.16.")
+                && !(authService.isAdmin(userID)))
+            throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "허용되지 않은 IP대역입니다");
 
         /* SSL 인증서 조회 */
         Certificate certificate;
@@ -224,7 +231,7 @@ public class RoutingService {
         }
 
         /* nginx test */
-        String url = "http://nginx:8081/nginx-api/test";
+        String url = "http://" + nginxAddress + ":8081/nginx-api/test";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (HttpClientErrorException | HttpServerErrorException e) {
@@ -249,7 +256,7 @@ public class RoutingService {
         }
 
         /* nginx reload */
-        url = "http://nginx:8081/nginx-api/reload";
+        url = "http://" + nginxAddress + ":8081/nginx-api/reload";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (RuntimeException e) {
@@ -285,7 +292,7 @@ public class RoutingService {
         }
 
         /* nginx test */
-        String url = "http://nginx:8081/nginx-api/test";
+        String url = "http://" + nginxAddress + ":8081/nginx-api/test";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (Exception e) {
@@ -298,7 +305,7 @@ public class RoutingService {
         }
 
         /* nginx reload */
-        url = "http://nginx:8081/nginx-api/reload";
+        url = "http://" + nginxAddress + ":8081/nginx-api/reload";
         try {
             restTemplate.getForEntity(url, String.class);
         } catch (Exception e) {
@@ -315,11 +322,14 @@ public class RoutingService {
         routingRepository.save(routing);
     }
 
-    private void validateDTO(RoutingDTO dto) {
+    private void validateDTO(RoutingDTO dto, String userID) {
 
         for (ConstraintViolation<RoutingDTO> violation : Validation.buildDefaultValidatorFactory().getValidator().validate(dto)) {
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, violation.getMessage());
         }
+
+        if (!dto.getIp().startsWith("10.16.") && !(authService.isAdmin(userID)))
+            throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "허용되지 않은 IP대역입니다");
 
     }
 }

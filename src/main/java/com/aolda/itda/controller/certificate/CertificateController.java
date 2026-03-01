@@ -22,17 +22,17 @@ public class CertificateController {
      * POST /api/certificate?projectId=xxx
      */
     @PostMapping("/certificate")
-    public ResponseEntity<Void> create(
+    public ResponseEntity<CertificateDTO> create(
             @RequestParam String projectId,
             @RequestBody CertificateDTO dto,
             HttpServletRequest request
     ) {
-        certificateService.createCertificate(
+
+        return ResponseEntity.ok(certificateService.createCertificate(
                 projectId,
                 dto,
                 (List<String>) request.getAttribute("projects")
-        );
-        return ResponseEntity.ok().build();
+        ));
     }
 
     /**

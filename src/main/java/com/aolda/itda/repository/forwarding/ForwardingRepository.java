@@ -15,4 +15,7 @@ public interface ForwardingRepository extends JpaRepository<Forwarding, Long> {
 
     @Query("SELECT f FROM Forwarding f WHERE f.projectId = ?1 AND f.isDeleted = ?3 AND (f.instanceIp LIKE %?2% OR f.serverPort LIKE %?2% OR f.name LIKE %?2%)")
     List<Forwarding> findWithSearch(String projectId, String query, Boolean isDeleted);
+
+    @Query("SELECT f.serverPort FROM Forwarding f WHERE f.isDeleted = ?1")
+    List<Integer> findAllUsedServerPortsByIsDeleted(Boolean isDeleted);
 }
