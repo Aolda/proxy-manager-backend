@@ -80,20 +80,21 @@ public class ForwardingService {
 
         /* 입력 DTO 검증 */
         validateDTO(dto, userID);
+        boolean isAdmin = authService.isAdmin(userID);
 
         /* 중복 검증 */
         if (forwardingRepository.existsByInstanceIpAndInstancePortAndIsDeleted(dto.getInstanceIp(), dto.getInstancePort(), false)) {
             throw new CustomException(ErrorCode.DUPLICATED_INSTANCE_INFO);
         }
 
-        if (authService.isAdmin(userID) &&
+        if (isAdmin &&
                 dto.getServerPort() != null &&
                 forwardingRepository.existsByServerPortAndIsDeleted(dto.getServerPort(), false)) {
             throw new CustomException(ErrorCode.DUPLICATED_SERVER_PORT);
         }
 
         /* 포트포워딩 엔티티 생성 */
-        String serverPort = dto.getServerPort() == null ? String.valueOf(createPort()) : dto.getServerPort();
+        String serverPort = isAdmin && dto.getServerPort() != null ? dto.getServerPort() : String.valueOf(createPort());
         Forwarding forwarding = Forwarding.builder()
                 .isDeleted(false)
                 .projectId(projectId)
@@ -174,15 +175,20 @@ public class ForwardingService {
     public void editForwarding(Long forwardingId, ForwardingDTO dto, List<String> projects, String userID) {
         Forwarding forwarding = forwardingRepository.findByForwardingIdAndIsDeleted(forwardingId, false)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FORWARDING));
+        boolean isAdmin = authService.isAdmin(userID);
 
         /* 프로젝트 권한 검증 */
         authService.validateProjectAuth(projects, forwarding.getProjectId());
 
         /* 중복 검증 */
         if (dto.getServerPort() != null && forwardingRepository.existsByServerPortAndIsDeleted(dto.getServerPort(), false)
-        && authService.isAdmin(userID)) {
+        && isAdmin) {
             forwardingRepository.existsByServerPortAndIsDeleted(dto.getServerPort(), false);
             throw new CustomException(ErrorCode.DUPLICATED_SERVER_PORT);
+        }
+
+        if (!isAdmin) {
+            dto.setServerPort(null);
         }
 
         if (!(dto.getInstanceIp() == null && dto.getInstancePort() == null) &&
