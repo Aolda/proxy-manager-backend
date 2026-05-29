@@ -38,6 +38,8 @@ import java.util.regex.Pattern;
 @Slf4j
 public class RoutingService {
 
+    private static final Pattern DOMAIN_PATTERN = Pattern.compile("^(\\*\\.)?([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}$");
+
     @Value("${nginx.server.address}")
     private String nginxAddress;
     private final RoutingRepository routingRepository;
@@ -189,6 +191,10 @@ public class RoutingService {
             throw new CustomException(ErrorCode.DUPLICATED_DOMAIN_NAME);
         }
 
+        if (dto.getDomain() != null) {
+            validateDomain(dto.getDomain(), userID);
+        }
+
         if ((dto.getIp() != null) && !dto.getIp().startsWith("10.16.")
                 && !(authService.isAdmin(userID)))
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "허용되지 않은 IP대역입니다");
@@ -331,5 +337,17 @@ public class RoutingService {
         if (!dto.getIp().startsWith("10.16.") && !(authService.isAdmin(userID)))
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "허용되지 않은 IP대역입니다");
 
+        validateDomain(dto.getDomain(), userID);
+
+    }
+
+    private void validateDomain(String domain, String userID) {
+        if (!DOMAIN_PATTERN.matcher(domain).matches()) {
+            throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "잘못된 도메인 형식입니다");
+        }
+
+        if (domain.startsWith("*.") && !authService.isAdmin(userID)) {
+            throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "와일드카드 도메인은 관리자만 설정할 수 있습니다");
+        }
     }
 }
