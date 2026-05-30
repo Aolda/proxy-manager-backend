@@ -34,6 +34,7 @@ public class RoutingTemplate {
                 + "\n"
                 + "access_log /data/logs/proxy-host-" + dto.getId() + "_access.log proxy;\n"
                 + "error_log /data/logs/proxy-host-" + dto.getId() + "_error.log warn;\n"
+                + optionTemplate.getLetsEncryptChallenge()
                 + "location / { \n"
                 + "proxy_set_header Upgrade $http_upgrade;\n"
                 + "proxy_set_header Connection $http_connection;\n"
