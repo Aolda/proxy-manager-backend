@@ -42,6 +42,8 @@ public class RoutingService {
 
     @Value("${nginx.server.address}")
     private String nginxAddress;
+    @Value("${itda.allowed-ip-prefix}")
+    private String allowedIpPrefix;
     private final RoutingRepository routingRepository;
     private final CertificateRepository certificateRepository;
     private final AuthService authService;
@@ -195,7 +197,7 @@ public class RoutingService {
             validateDomain(dto.getDomain(), userID);
         }
 
-        if ((dto.getIp() != null) && !dto.getIp().startsWith("10.16.")
+        if ((dto.getIp() != null) && !isAllowedIp(dto.getIp())
                 && !(authService.isAdmin(userID)))
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "허용되지 않은 IP대역입니다");
 
@@ -334,11 +336,15 @@ public class RoutingService {
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, violation.getMessage());
         }
 
-        if (!dto.getIp().startsWith("10.16.") && !(authService.isAdmin(userID)))
+        if (!isAllowedIp(dto.getIp()) && !(authService.isAdmin(userID)))
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "허용되지 않은 IP대역입니다");
 
         validateDomain(dto.getDomain(), userID);
 
+    }
+
+    private boolean isAllowedIp(String ip) {
+        return ip.startsWith(allowedIpPrefix);
     }
 
     private void validateDomain(String domain, String userID) {

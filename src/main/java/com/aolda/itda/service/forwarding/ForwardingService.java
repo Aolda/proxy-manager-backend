@@ -40,6 +40,8 @@ public class ForwardingService {
     private String serverBaseIp;
     @Value("${nginx.server.address}")
     private String nginxAddress;
+    @Value("${itda.allowed-ip-prefix}")
+    private String allowedIpPrefix;
     private final ForwardingTemplate forwardingTemplate;
     private final ForwardingRepository forwardingRepository;
     private final AuthService authService;
@@ -199,7 +201,7 @@ public class ForwardingService {
             throw new CustomException(ErrorCode.DUPLICATED_INSTANCE_INFO);
         }
 
-        if (!(dto.getInstanceIp() == null) && !dto.getInstanceIp().startsWith("10.16.")
+        if (!(dto.getInstanceIp() == null) && !isAllowedIp(dto.getInstanceIp())
         && !(authService.isAdmin(userID)))
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "허용되지 않은 IP대역입니다");
 
@@ -319,9 +321,13 @@ public class ForwardingService {
         for (ConstraintViolation<ForwardingDTO> violation : Validation.buildDefaultValidatorFactory().getValidator().validate(dto)) {
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, violation.getMessage());
         }
-        if (!dto.getInstanceIp().startsWith("10.16.") && !(authService.isAdmin(userID)))
+        if (!isAllowedIp(dto.getInstanceIp()) && !(authService.isAdmin(userID)))
             throw new CustomException(ErrorCode.INVALID_CONF_INPUT, "허용되지 않은 IP대역입니다");
 
+    }
+
+    private boolean isAllowedIp(String ip) {
+        return ip.startsWith(allowedIpPrefix);
     }
 
     private int createPort() {
