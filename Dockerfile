@@ -1,4 +1,4 @@
-FROM gradle:jdk21 AS build
+FROM gradle:8.12.1-jdk21 AS build
 
 WORKDIR /tmp
 RUN wget -O lego.tar.gz "https://github.com/go-acme/lego/releases/download/v4.22.2/lego_v4.22.2_linux_amd64.tar.gz" && tar -xzf lego.tar.gz && rm -f lego.tar.gz

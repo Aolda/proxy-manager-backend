@@ -36,6 +36,8 @@ public class ForwardingDTO {
             message = "잘못된 포트 형식 (instance)")
     private String instancePort;
 
+    private Boolean proxyProtocol;
+
     @NotBlank(message = "name 값이 존재하지 않습니다")
     private String name;
 

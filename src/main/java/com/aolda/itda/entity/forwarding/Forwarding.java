@@ -35,6 +35,10 @@ public class Forwarding extends BaseTimeEntity {
     @Column(length = 8)
     private String instancePort;
 
+    @Builder.Default
+    @Column(name = "proxy_protocol", columnDefinition = "boolean default false")
+    private Boolean proxyProtocol = false;
+
     private Boolean isDeleted;
 
     @Column(length = 256)
@@ -47,6 +51,7 @@ public class Forwarding extends BaseTimeEntity {
         this.serverPort = forwarding.getServerPort();
         this.instanceIp = forwarding.getInstanceIp();
         this.instancePort = forwarding.getInstancePort();
+        this.proxyProtocol = Boolean.TRUE.equals(forwarding.getProxyProtocol());
         this.isDeleted = forwarding.getIsDeleted();
         this.name = forwarding.getName();
     }
@@ -58,12 +63,14 @@ public class Forwarding extends BaseTimeEntity {
                 .serverPort(serverPort)
                 .instanceIp(instanceIp)
                 .instancePort(instancePort)
+                .proxyProtocol(Boolean.TRUE.equals(proxyProtocol))
                 .createdAt(getCreatedAt())
                 .updatedAt(getUpdatedAt())
                 .build();
     }
 
     public void edit(ForwardingDTO dto) {
+        if (dto.getProxyProtocol() != null) this.proxyProtocol = dto.getProxyProtocol();
         this.name = dto.getName() != null ? dto.getName() : this.name;
         this.serverPort = dto.getServerPort() != null &&
                 dto.getServerPort().matches("^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$")

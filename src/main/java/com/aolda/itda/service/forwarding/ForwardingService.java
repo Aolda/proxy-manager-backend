@@ -83,6 +83,9 @@ public class ForwardingService {
         /* 입력 DTO 검증 */
         validateDTO(dto, userID);
         boolean isAdmin = authService.isAdmin(userID);
+        if (!isAdmin && dto.getProxyProtocol() != null) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_USER, "PROXY protocol 설정은 관리자만 변경할 수 있습니다");
+        }
 
         /* 중복 검증 */
         if (forwardingRepository.existsByInstanceIpAndInstancePortAndIsDeleted(dto.getInstanceIp(), dto.getInstancePort(), false)) {
@@ -105,12 +108,13 @@ public class ForwardingService {
                 .serverPort(serverPort)
                 .instanceIp(dto.getInstanceIp())
                 .instancePort(dto.getInstancePort())
+                .proxyProtocol(isAdmin && Boolean.TRUE.equals(dto.getProxyProtocol()))
                 .build();
 
         forwardingRepository.save(forwarding);
 
         /* nginx conf 파일 생성 및 예외 처리 */
-        String content = forwardingTemplate.getPortForwardingWithTCP(serverPort, dto.getInstanceIp(), dto.getInstancePort(), dto.getName());
+        String content = forwardingTemplate.getPortForwardingWithTCP(serverPort, dto.getInstanceIp(), dto.getInstancePort(), dto.getName(), Boolean.TRUE.equals(forwarding.getProxyProtocol()));
         String confPath = "/data/nginx/stream/" + forwarding.getForwardingId() + ".conf";
 
         File file = new File(confPath);
@@ -178,6 +182,9 @@ public class ForwardingService {
         Forwarding forwarding = forwardingRepository.findByForwardingIdAndIsDeleted(forwardingId, false)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FORWARDING));
         boolean isAdmin = authService.isAdmin(userID);
+        if (!isAdmin && dto.getProxyProtocol() != null) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_USER, "PROXY protocol 설정은 관리자만 변경할 수 있습니다");
+        }
 
         /* 프로젝트 권한 검증 */
         authService.validateProjectAuth(projects, forwarding.getProjectId());
@@ -210,7 +217,8 @@ public class ForwardingService {
         String content = forwardingTemplate.getPortForwardingWithTCP(forwarding.getServerPort(),
                 forwarding.getInstanceIp(),
                 forwarding.getInstancePort(),
-                forwarding.getName());
+                forwarding.getName(),
+                Boolean.TRUE.equals(forwarding.getProxyProtocol()));
         String confPath = "/data/nginx/stream/" + forwarding.getForwardingId() + ".conf";
         File file = new File(confPath);
         if (!file.exists()) {
